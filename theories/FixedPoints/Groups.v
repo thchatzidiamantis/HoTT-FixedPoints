@@ -129,9 +129,54 @@ Proof.
     intros h [k p].
 Admitted.
 
-Definition groupreps `{U : Univalence} (G H : Group) : Type.
+Definition conj_grp_homo {G H : Group} (u v : G $-> H)
+  := merely {h : H & forall g : G, u g = grp_conj h (v g)}.
+
+(* I guess I can do this on the level of elements first *)
+
+Instance reflexive_conj_grp_homo {G H : Group}
+  : Reflexive (conj_grp_homo (G:=G) (H:=H)).
 Proof.
-  unshelve refine (@Quotient (G $-> H) _).
-  intros a b.
-  exact (merely {h : H & forall g : G, a g = grp_conj h (b g)}).
+  intro u.
+  apply tr.
+  exists group_unit.
+  intro g; by rhs exact (grp_conj_unit (u g)).
 Defined.
+
+(* get rid of rewrites in the next two lemmas *)
+
+Instance symmetric_conj_grp_homo {G H : Group}
+  : Symmetric (conj_grp_homo (G:=G) (H:=H)).
+Proof.
+  intros u v cuv.
+  strip_truncations; apply tr.
+  destruct cuv as [h ch].
+  exists (inv h).
+  intro g.
+  unfold grp_conj; cbn.
+  rewrite grp_inv_inv.
+  refine (grp_moveL_gM _).
+  refine (grp_moveL_Vg _).
+  lhs apply (grp_assoc h (v g) (inv h)).
+  exact (ch g)^.
+Defined.
+
+Instance transitive_conj_grp_homo {G H : Group}
+  : Transitive (conj_grp_homo (G:=G) (H:=H)).
+Proof.
+  intros u v w cuv cvw.
+  strip_truncations; apply tr.
+  destruct cuv as [h1 ch1]; destruct cvw as [h2 ch2].
+  exists (h1 * h2).
+  intro g.
+  specialize (ch1 g); specialize (ch2 g).
+  rewrite ch2 in ch1.
+  unfold grp_conj in ch1; cbn in ch1.
+  repeat rewrite (grp_assoc h1 _) in ch1.
+  rewrite <- (grp_assoc _ (inv h1)) in ch1.
+  rewrite <- grp_inv_op in ch1.
+  exact ch1.
+Defined.
+
+Definition groupreps `{U : Univalence} (G H : Group) : Type
+  := (@Quotient (G $-> H) (conj_grp_homo)).

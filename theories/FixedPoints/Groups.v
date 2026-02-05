@@ -114,7 +114,6 @@ Proof.
 
 Admitted.
 
-
 Definition grp_hom_centralizer_image_grp_hom_conj `{F : Funext}
   {G H : Group} {u v : G $-> H}
   (conj : {h : H & forall g : G, u g = grp_conj h (v g)})
@@ -134,5 +133,5 @@ Definition groupreps `{U : Univalence} (G H : Group) : Type.
 Proof.
   unshelve refine (@Quotient (G $-> H) _).
   intros a b.
-  exact {h : H & forall g : G, a g = grp_conj h (b g)}.
+  exact (merely {h : H & forall g : G, a g = grp_conj h (b g)}).
 Defined.

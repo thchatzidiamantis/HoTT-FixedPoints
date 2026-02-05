@@ -17,6 +17,7 @@ Proof.
   - intro i.
     exact (fmap G (cat_pr i)).
   - intros c h.
+  (* take care of directions when applying equivalences. *)
     apply adj.
     apply cat_prod_corec.
     intro i.

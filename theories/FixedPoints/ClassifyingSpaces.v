@@ -1,12 +1,11 @@
 (** * Mapping spaces between classifying spaces *)
 
 From HoTT Require Import Basics Types.
-(* Results from Truncations.Constant might be useful as this progresses. *)
-Require Import Truncations.Core Truncations.Connectedness Truncations.Constant.
+Require Import Truncations.Core Truncations.Connectedness Truncations.Constant SeparatedTrunc.
 Require Import Algebra.Groups.Group Subgroup Algebra.AbGroups.Centralizer.
 Require Import Pointed WildCat WildCat.Core.
 Require Import Homotopy.ClassifyingSpace.
-Require Import Colimits.Quotient.
+Require Import Colimits.Quotient GraphQuotient.
 Require Import Cubical.DPath PathSquare.
 Require Export Classes.interfaces.canonical_names (SgOp, sg_op,
     MonUnit, mon_unit, LeftIdentity, left_identity, RightIdentity, right_identity,
@@ -44,7 +43,8 @@ Proof.
   - intro f.
     apply tr.
     exact (fmap B (a := G) (b := H) f).
-  - intros a b [h r].
+  - intros a b h.
+    strip_truncations; destruct h as [h r].
     apply ap.
     apply path_forall.
     lhs' exact (fmap2 (g:=grp_conj h $o b) B r).
@@ -54,12 +54,30 @@ Proof.
     exact (idmap_fmap_grp_conj h _).
 Defined.
 
-(* tr being equal means that the maps are merely equal. *)
-Definition inj_rep_bg_to_bh `{U : Univalence} {G H : Group} (u v : G $-> H)
-  (p : tr (n:=0) (pointed_fun (fmap B (a := G) (b := H) u)) = tr (pointed_fun (fmap B (a := G) (b := H) v)))
+Definition ap_fmap_b `{U : Univalence} {G H : Group} (u : G $-> H) (g : G)
+  : ap (fmap B u) (bloop g) = bloop (u g)
+  := ClassifyingSpace_rec_beta_bloop _ _ _ _ _.
+
+Definition isinjective_rep_bg_to_bh `{U : Univalence}
+  {G H : Group} (u v : G $-> H)
+  (p : rep_bg_to_bh G H (class_of _ u) = rep_bg_to_bh G H (class_of _ v))
   : merely {h : H & u == grp_conj h $o v}.
 Proof.
-Admitted.
+  apply (equiv_path_Tr _ _)^-1 in p.
+  strip_truncations; apply tr.
+  pose (h := equiv_g_loops_bg^-1 (ap10 p bbase)).
+  exists h.
+  intro x.
+  simpl.
+  rewrite (eissect equiv_g_loops_bg _)^.
+  rewrite (eissect equiv_g_loops_bg (h * v x * inv h))^.
+  apply ap; simpl.
+  repeat rewrite bloop_pp.
+  rewrite bloop_inv.
+  rewrite eisretr.
+  repeat rewrite <- ap_fmap_b.
+  exact  (ap_homotopic (ap10 p) (bloop x)).
+Defined.
 
 Definition isequiv_rep_bg_to_bh `{U : Univalence} (G H : Group)
   : IsEquiv (rep_bg_to_bh G H).
@@ -67,19 +85,41 @@ Proof.
   apply equiv_contr_map_isequiv.
   intro f.
   strip_truncations.
-  generalize (merely_path_is0connected (B H) (f bbase) bbase).
-  intro q.
+
+  (* Since [B H] is connected and our goal is a proposition, we can assume that [f] is pointed. *)
+  pose proof (q:=merely_path_is0connected (B H) (f bbase) bbase).
   strip_truncations.
+  (* The next four lines replace [f] by [pointed_fun fp] for a general pointed map [fp]. *)
+  pose (fp:=Build_pMap f q).
+  change f with (pointed_fun fp).
+  clearbody fp; clear q f.
+
+  (* The previous six lines can be replaced by the following, which is just using that the forgetful map [pointed_fun] is surjective. This last fact is proved as the subgoal, but could be made into a lemma.  So even though this is a bit longer, it is more conceptual, so I think it's better. *)
+  (*
+  revert f.
+  rapply (conn_map_elim (-1) (pointed_fun : (B G ->* B H) -> _)).
+  { intro f.
+    rapply contr_inhabited_hprop.
+    pose proof (q:=merely_path_is0connected (B H) (f bbase) bbase).
+    strip_truncations; apply tr.
+    exists (Build_pMap f q).
+    reflexivity. }
+  intro fp.
+  *)
+
   srapply Build_Contr.
-  - unshelve econstructor.
-    { unfold groupreps.
-      apply class_of.
-      apply equiv_grp_homo_pmap_bg.
-      srapply Build_pMap.
-      1: exact f.
-      exact q. }
-    { unfold rep_bg_to_bh.
-      admit. }
+  - exists (class_of _ ((equiv_grp_homo_pmap_bg _ _)^-1 fp)).
+    unfold rep_bg_to_bh.
+    unfold Quotient_rec, class_of.
+    unfold Trunc_rec, Trunc_ind.
+    unfold GraphQuotient_rec, GraphQuotient_ind.
+    apply ap.
+    (* Reveal [pointed_fun], to make things more clear to the reader. *)
+    Set Printing Coercions.
+    (* Our goal is an equality of *unpointed* maps.  Let's upgrade it to an equality of pointed maps. *)
+    apply ap.
+    Unset Printing Coercions.
+    apply eisretr.
   - 
   (* Do this in a separate lemma, generalising the first map (any two maps that are sent to the same thing are conjugate). *)
     intros [u p].

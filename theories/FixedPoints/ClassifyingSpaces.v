@@ -1,6 +1,7 @@
 (** * Mapping spaces between classifying spaces *)
 
 From HoTT Require Import Basics Types.
+Require Import Universes.HProp.
 Require Import Truncations.Core Truncations.Connectedness Truncations.Constant SeparatedTrunc.
 Require Import Algebra.Groups.Group Subgroup Algebra.AbGroups.Centralizer.
 Require Import Pointed WildCat WildCat.Core.
@@ -79,6 +80,7 @@ Proof.
   exact  (ap_homotopic (ap10 p) (bloop x)).
 Defined.
 
+(* maybe use isequiv_surj_emb *)
 Definition isequiv_rep_bg_to_bh `{U : Univalence} (G H : Group)
   : IsEquiv (rep_bg_to_bh G H).
 Proof.
@@ -107,7 +109,18 @@ Proof.
   intro fp.
   *)
 
-  srapply Build_Contr.
+  srapply equiv_hprop_inhabited_contr.
+  - apply hprop_allpath.
+    intros [u pu] [v pv].
+    srapply path_sigma_hprop; unfold ".1".
+    pose proof (p := pu @ pv^); clear pu pv.
+    pose proof (s := issurj_class_of conj_grp_homo (A:=G$->H)).
+    pose proof (a := center _ (H:=(s u))); pose proof (b := center _ (H:=(s v))).
+    strip_truncations.
+    destruct a as [a pa]; destruct b as [b pb].
+    rewrite <- pa, <- pb in *.
+    srapply path_quotient.
+    exact (isinjective_rep_bg_to_bh _ _ p).
   - exists (class_of _ ((equiv_grp_homo_pmap_bg _ _)^-1 fp)).
     unfold rep_bg_to_bh.
     unfold Quotient_rec, class_of.
@@ -120,11 +133,4 @@ Proof.
     apply ap.
     Unset Printing Coercions.
     apply eisretr.
-  - 
-  (* Do this in a separate lemma, generalising the first map (any two maps that are sent to the same thing are conjugate). *)
-    intros [u p].
-    srapply path_sigma_hprop.
-    unfold ".1".
-    snapply (path_in_class_of _ _ _ _)^.
-    1,2,3,4: admit.
-Admitted.
+Defined.

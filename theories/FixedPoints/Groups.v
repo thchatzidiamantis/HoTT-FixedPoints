@@ -76,33 +76,37 @@ Definition grp_image_factorization {G H K : Group} (u : G $-> H) (v : H $-> K)
   : (v $o u) $== (grp_homo_restr v _) $o grp_homo_image_in u
   := fun x => idpath.
 
-(* This is very slow. Is seems that it should also be simpler. *)
-Definition eq_grp_image_homotopy {G H : Group} (u v : G $-> H) (p : u $== v)
+Definition grp_image_homotopic_grp_homo
+  {G H : Group} {u v : G $-> H} (p : u $== v)
+  : subgroup_group (grp_image u) $-> subgroup_group (grp_image v).
+Proof.
+  srapply subgroup_corec.
+  + snapply Build_GroupHomomorphism.
+    - exact pr1.
+    - intros x y; reflexivity.
+  + intros [h uh].
+    strip_truncations; apply tr.
+    exact (uh.1; (p _)^ @ uh.2).
+Defined.
+
+Definition inv_grp_image_homotopic_grp_homo
+  {G H : Group} {u v : G $-> H} (p : u $== v) (q : v $== u)
+  : (grp_image_homotopic_grp_homo p) o (grp_image_homotopic_grp_homo q) == idmap.
+Proof.
+  intro x.
+  apply path_sigma_hprop.
+  reflexivity.
+Defined.
+
+Definition grp_iso_grp_image_homotopic_grp_homo
+  {G H : Group} {u v : G $-> H} (p : u $== v)
   : subgroup_group (grp_image u) $<~> subgroup_group (grp_image v).
 Proof.
   srapply Build_GroupIsomorphism.
-  - unshelve snapply Build_GroupHomomorphism.
-    { intros [h uh].
-      exists h.
-      strip_truncations; apply tr.
-      exact (uh.1; (p _)^ @ uh.2). }
-    { intros x y.
-      snapply path_sigma_hprop.
-      - exact _.
-      - reflexivity. }
-  - snapply isequiv_adjointify.
-    { intros [h vh].
-      exists h.
-      strip_truncations; apply tr.
-      exact (vh.1; (p _) @ vh.2). }
-    { intro x.
-      snapply path_sigma_hprop.
-      - exact _.
-      - reflexivity. }
-    { intro x.
-      snapply path_sigma_hprop.
-      - exact _.
-      - reflexivity. }
+  1: exact (grp_image_homotopic_grp_homo p).
+  srapply isequiv_adjointify.
+  1: exact (grp_image_homotopic_grp_homo (fun x => (p x)^)).
+  1,2: by apply inv_grp_image_homotopic_grp_homo.
 Defined.
 
 (** u is v composed with an embedding (conjugation) so the images will be equivalent. *)
@@ -132,7 +136,7 @@ Admitted.
 Definition conj_grp_homo {G H : Group} (u v : G $-> H)
   := merely {h : H & forall g : G, u g = grp_conj h (v g)}.
 
-(* I guess I can do this on the level of elements first *)
+(* I guess I can do these on the level of elements first *)
 
 Instance reflexive_conj_grp_homo {G H : Group}
   : Reflexive (conj_grp_homo (G:=G) (H:=H)).
@@ -142,8 +146,6 @@ Proof.
   exists group_unit.
   intro g; by rhs exact (grp_conj_unit (u g)).
 Defined.
-
-(* get rid of rewrites in the next two lemmas *)
 
 Instance symmetric_conj_grp_homo {G H : Group}
   : Symmetric (conj_grp_homo (G:=G) (H:=H)).
@@ -161,6 +163,7 @@ Proof.
   exact (ch g)^.
 Defined.
 
+(* get rid of rewrites here *)
 Instance transitive_conj_grp_homo {G H : Group}
   : Transitive (conj_grp_homo (G:=G) (H:=H)).
 Proof.

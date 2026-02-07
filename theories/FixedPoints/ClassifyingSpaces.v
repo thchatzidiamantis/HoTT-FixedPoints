@@ -112,12 +112,12 @@ Proof.
   (* Since [B H] is connected and our goal is a proposition, we can assume that [f] is pointed. *)
   pose proof (q:=merely_path_is0connected (B H) (f bbase) bbase).
   strip_truncations.
-  (* The next four lines replace [f] by [pointed_fun fp] for a general pointed map [fp]. *)
+  (* The next three lines replace [f] by [pointed_fun fp] for a general pointed map [fp]. *)
   pose (fp:=Build_pMap f q).
   change f with (pointed_fun fp).
   clearbody fp; clear q f.
 
-  (* The previous six lines can be replaced by the following, which is just using that the forgetful map [pointed_fun] is surjective. This last fact is proved as the subgoal, but could be made into a lemma.  So even though this is a bit longer, it is more conceptual, so I think it's better. *)
+  (* The previous five lines can be replaced by the following, which is just using that the forgetful map [pointed_fun] is surjective. This last fact is proved as the subgoal, but could be made into a lemma.  So even though this is a bit longer, it is more conceptual, so I think it's better. *)
   (*
   revert f.
   rapply (conn_map_elim (-1) (pointed_fun : (B G ->* B H) -> _)).
@@ -132,10 +132,7 @@ Proof.
 
   apply tr.
   exists (class_of _ ((equiv_grp_homo_pmap_bg _ _)^-1 fp)).
-  unfold pi0_map_bg_groupreps.
-  unfold Quotient_rec, class_of.
-  unfold Trunc_rec, Trunc_ind.
-  unfold GraphQuotient_rec, GraphQuotient_ind.
+  change (_ = ?R) with (tr (pointed_fun (fmap B ((equiv_grp_homo_pmap_bg G H)^-1 fp))) = R).
   apply ap.
   (* Reveal [pointed_fun], to make things more clear to the reader. *)
   Set Printing Coercions.
@@ -143,9 +140,37 @@ Proof.
   apply ap.
   Unset Printing Coercions.
   apply eisretr.
+  (* jdc: I'm not sure what was going on, but it was the [unfold Trunc_ind] that was causing it.  Doing the unfolding all at once to get to the goal we expect made the problem go away. *)
+Defined.
 
-(* tcc: no errors in this proof until the `Defined` line, where I get "Case analysis on private inductive Trunc". *)
+(* jdc: while investigating the above, I came up with a shorter, more conceptual proof, which I have included below.  It actually had the same private inductive error, which was also fixed by using a [change] tactic.  I think we should delete the proof above.  (Feel free to delete comments like this when no longer needed.) *)
 
+(** When [Y] is connected, every function [X -> Y] is merely pointed, so [pointed_fun] is a surjection. *)
+Instance issurj_pointed_fun_conn `{Univalence} {X Y : pType} `{IsConnected 0 Y}
+  : IsSurjection (pointed_fun : (X ->* Y) -> (X -> Y)).
+Proof.
+  apply (cancelR_issurjection (issig_pmap X Y)); cbn.
+  rapply conn_map_pr1.
+Defined.
+
+(** It follows that [pi0_map_bg_groupreps] is surjective.  By definition, we have a commutative diagram
+<<
+         fmap B             pointed_fun
+  G $-> H   <~>   (BG ->* BH)  ---------->  (BG -> BH)
+     |                                      |
+  gq |                                      | tr
+     v                                      v
+  groupreps G H ------------------> Tr 0 (BG -> BH)
+                pi0_map_bg_groupreps
+>>
+    To show that [pi0_map_bg_groupreps] is surjective, it suffices to show that this is true after precomposition with [gq], and so we just need to show that the other three maps are surjective.  Rocq can prove these by typeclass search, with one hint for [tr]. *)
+Definition issurj_pi0_map_bg_groupreps' `{U : Univalence} {G H : Group}
+  : IsSurjection (pi0_map_bg_groupreps G H).
+Proof.
+  apply (cancelR_issurjection (class_of _)).
+  change (IsConnMap (Tr (-1)) (tr (n:=0) o pointed_fun o fmap (a:=G) (b:=H) B)).
+  pose (@isconnmap_pred' 0). (* [tr] is in fact 0-connected, so we give this hint. *)
+  exact _.
 Defined.
 
 Definition isequiv_pi0_map_bg_groupreps `{U : Univalence} (G H : Group)

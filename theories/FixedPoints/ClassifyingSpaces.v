@@ -1,7 +1,7 @@
 (** * Mapping spaces between classifying spaces *)
 
 From HoTT Require Import Basics Types.
-Require Import Universes.HProp.
+Require Import Universes.HProp Universes.HSet.
 Require Import Truncations.Core Truncations.Connectedness Truncations.Constant SeparatedTrunc.
 Require Import Algebra.Groups.Group Subgroup Algebra.AbGroups.Centralizer.
 Require Import Pointed WildCat WildCat.Core.
@@ -86,21 +86,30 @@ Defined.
 Definition isemb_pi0_map_bg_groupreps `{U : Univalence} {G H : Group}
   : IsEmbedding (pi0_map_bg_groupreps G H).
 Proof.
-  intro x.
-  apply hprop_allpath.
-  intros [u pu] [v pv].
-  srapply path_sigma_hprop; unfold ".1".
-  pose proof (p := pu @ pv^); clear pu pv.
-
-  (* tcc: in the next five lines I use surjectivity of [class_of] to lift [u] and [v] to representatives in [G $-> H]. Can this be made faster? I tried to use [conn_map_elim], but that changed only one of the terms. *)
-
-  pose proof (s := issurj_class_of conj_grp_homo (A:=G$->H)).
-  pose proof (a := center _ (H:=(s u))); pose proof (b := center _ (H:=(s v))).
-  strip_truncations.
-  destruct a as [a pa]; destruct b as [b pb].
-  rewrite <- pa, <- pb in *.
-  srapply path_quotient.
+  apply isembedding_isinj_hset.
+  (* jdc: juggling the intros here gets rid of one use of Funext per call to [conn_map_elim] (but we still need it once for each call). Minor point, but good practice. *)
+  intros u.
+  rapply (conn_map_elim (-1) (class_of _)).
+  intro v; revert u.
+  rapply (conn_map_elim (-1) (class_of _)).
+  intros u p.
+  rapply path_quotient.
   exact (isinjective_pi0_map_bg_groupreps _ _ p).
+Defined.
+
+(** TODO: The above argument generalizes.  This can go at the end of Universes/HSet.v and be used above. *)
+(** TODO: Can [Funext] be avoided? *)
+Definition cancelR_isinjective_surj `{Funext} {A B C : Type} `{IsHSet B}
+  (f : A -> B) (g : B -> C)
+  (inj_gf : IsInjective (g o f)) (surj_f : IsSurjection f)
+  : IsInjective g.
+Proof.
+  intros u.
+  rapply (conn_map_elim (-1) f).
+  intro v; revert u.
+  rapply (conn_map_elim (-1) f).
+  intros u p.
+  apply ap, inj_gf, p.
 Defined.
 
 Definition issurj_pi0_map_bg_groupreps `{U : Univalence} {G H : Group}

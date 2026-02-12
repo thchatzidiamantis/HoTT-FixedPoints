@@ -30,6 +30,7 @@ Definition subtype_centralizer {G : Group} (H : G -> Type)
   := fun g => (forall h : G, H h -> centralizer h g).
 
 (* Need Funext to prove that this [subtype_centralizer] is [HProp]-valued. *)
+(* jdc: we've discussed removing the assumption that the predicate on a subgroup is HProp-valued, as this is only used in a few places.  But for now, I don't see a way around this. *)
 Instance issubgroup_subtype_centralizer `{F : Funext}
   {G : Group} (H : G -> Type)
   : IsSubgroup (subtype_centralizer H).

@@ -109,28 +109,28 @@ Proof.
   1,2: by apply inv_grp_image_homotopic_grp_homo.
 Defined.
 
-(** u is v composed with an embedding (conjugation) so the images will be equivalent. *)
-Definition equiv_image_grp_hom_conj `{F : Funext}
+Definition g `{F : Funext}
   {G H : Group} {u v : G $-> H}
-  {c : H} (hc : forall g : G, u g = grp_conj c (v g))
-  : subgroup_group (grp_image u) $<~> subgroup_group (grp_image v).
+  (conj : {h : H & forall g : G, u g = grp_conj h (v g)})
+  : subgroup_group (subtype_centralizer_subgroup (grp_image u))
+    $-> subgroup_group (subtype_centralizer_subgroup (grp_image v)).
 Proof.
-
+  srapply subgroup_corec.
+  + snapply Build_GroupHomomorphism.
+    -
 Admitted.
 
 Definition grp_hom_centralizer_image_grp_hom_conj `{F : Funext}
-  {G H : Group} {u v : G $-> H}
-  (conj : {h : H & forall g : G, u g = grp_conj h (v g)})
-  : (subtype_centralizer_subgroup (fun h => {g : G & u g = h}))
-    <~> (subtype_centralizer_subgroup (fun h => {g : G & v g = h})).
+  {G H : Group} (u : G $-> H) (h : H)
+  : GroupIsomorphism  
+    (subgroup_group (subtype_centralizer_subgroup (grp_image u)))
+    (subgroup_group (subtype_centralizer_subgroup (grp_image ((grp_conj h) $o u)))).
 Proof.
-(* I can probably be smarter about this and show that the subtypes formed by this are equivalent before applying subtype_centralizer_subgroup. See thing above. *)
-  snapply Build_Equiv.
-  - intros [x Cx].
-    unfold subtype_centralizer_subgroup, subtype_centralizer, centralizer in *.
-    cbn in *.
-    exists x.
-    intros h [k p].
+  (* appply some lemma that if same subtypes lead to same centralizers. *)
+  srapply Build_GroupIsomorphism.
+  - srapply subgroup_corec.
+
+    
 Admitted.
 
 Definition conj_grp_homo {G H : Group} (u v : G $-> H)

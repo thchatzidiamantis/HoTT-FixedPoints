@@ -37,7 +37,8 @@ Proof.
     by rhs rapply (ap bloop (grp_inv_gV_g _ g)).
 Defined.
 
-(* This map will be an equivalence on [Pi 0]. *)
+(** ** Connected components of [B G -> B H] *)
+
 Definition pi0_map_bg_groupreps `{U : Univalence} (G H : Group)
   : groupreps G H -> Trunc 0 (B G -> B H).
 Proof.
@@ -58,7 +59,7 @@ Proof.
     exact (idmap_fmap_grp_conj h _).
 Defined.
 
-Definition ap_fmap_b `{U : Univalence} {G H : Group} (u : G $-> H) (g : G)
+Definition ap_fmap_b {G H : Group} (u : G $-> H) (g : G)
   : ap (fmap B u) (bloop g) = bloop (u g)
   := ClassifyingSpace_rec_beta_bloop _ _ _ _ _.
 
@@ -73,14 +74,14 @@ Proof.
   exists h.
   intro x.
   simpl.
-  rewrite (eissect equiv_g_loops_bg _)^.
-  rewrite (eissect equiv_g_loops_bg (h * v x * inv h))^.
-  apply ap; simpl.
-  repeat rewrite bloop_pp.
+  apply (equiv_inj equiv_g_loops_bg).
+  simpl.
+  rewrite 2 bloop_pp.
   rewrite bloop_inv.
+  (* [h] is defined by applying [equiv_g_loops_bg^-1] and [bloop] is the inverse of that function. *)
   rewrite eisretr.
-  repeat rewrite <- ap_fmap_b.
-  exact  (ap_homotopic (ap10 p) (bloop x)).
+  rewrite <- 2 ap_fmap_b.
+  exact (ap_homotopic (ap10 p) (bloop x)).
 Defined.
 
 Definition isemb_pi0_map_bg_groupreps `{U : Univalence} {G H : Group}
@@ -94,6 +95,16 @@ Proof.
   rapply (conn_map_elim (-1) (class_of _)).
   intros u p.
   rapply path_quotient.
+  exact (isinjective_pi0_map_bg_groupreps _ _ p).
+Defined.
+
+Definition isemb_pi0_map_bg_groupreps' `{U : Univalence} {G H : Group}
+  : IsEmbedding (pi0_map_bg_groupreps G H).
+Proof.
+  apply isembedding_isinj_hset.
+  rapply Quotient_ind2_hprop.
+  intros u v p.
+  srapply path_quotient.
   exact (isinjective_pi0_map_bg_groupreps _ _ p).
 Defined.
 
@@ -193,3 +204,55 @@ Defined.
 Definition equiv_groupreps_pi0_map_bg `{U : Univalence} (G H : Group)
   : (groupreps G H) <~> Pi 0 [(B G -> B H), (fun x => bbase)]
   := Build_Equiv _ _ _ (isequiv_pi0_map_bg_groupreps G H).
+
+(** ** The fundamental group of [B G -> B H] *)
+
+(* Can I do this without funext? Use H-space structure. *)
+Definition map_bg_b_centralizer_grp_image `{F : Funext}
+  {G H : Group} (f : G $-> H)
+  : B (subtype_centralizer_subgroup (grp_image f)) -> (B G -> B H).
+Proof.
+  intro c.
+  srapply ClassifyingSpace_rec.
+  1: exact bbase.
+  { intro g.
+    revert c.
+    srapply ClassifyingSpace_ind_hset.
+    - exact (bloop (f g)).
+    - intros [x cx].
+      refine (transport_const _ _ @ _).
+      admit.
+   }
+  
+    
+Admitted.
+
+Definition map_bg_b_centralizer_grp_image' `{F : Funext}
+  {G H : Group} (f : G $-> H)
+  : B (subtype_centralizer_subgroup (grp_image f)) -> (B G -> B H).
+Proof.
+  srapply ClassifyingSpace_rec.
+  { exact (pointed_fun (fmap B f)). }
+  { intros [h ch].
+    unfold subtype_centralizer_subgroup, subtype_centralizer, centralizer in ch; cbn in ch.
+    apply path_forall.
+    srapply ClassifyingSpace_ind_hset; cbn beta.
+    - simpl.
+      exact (bloop h).
+    - intro g.
+      rapply equiv_sq_dp^-1.
+      apply equiv_sq_path.
+      lhs apply (ap (fun y => (bloop h) @ y) (ap_fmap_b f g)).
+      rhs apply (ap (fun y => y @ (bloop h)) (ap_fmap_b f g)).
+      lhs apply (bloop_pp h (f g))^.
+      rhs apply (bloop_pp (f g) h)^.
+      apply ap.
+      exact (ch _ (grp_image_in f g))^. }
+    { cbn beta.
+      intros x y.
+      rewrite <- path_forall_pp.
+      apply ap.
+      apply path_forall.
+      srapply ClassifyingSpace_ind_hprop.
+      exact (bloop_pp x.1 y.1). }
+Defined.

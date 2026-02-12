@@ -256,6 +256,14 @@ Proof.
   apply concat_1p.
 Defined.
 
+(** When the same function appears twice, there is a special computation rule for transporting [idpath]. *)
+Definition transport_paths_FlFr_1 {A B : Type} {f : A -> B} {x1 x2 : A}
+  (p : x1 = x2)
+  : transport (fun x => f x = f x) p 1 = 1.
+Proof.
+  by destruct p.
+Defined.
+
 (** ** Transporting in 2-path types *)
 
 Definition transport_paths2 {A : Type} {x y : A}

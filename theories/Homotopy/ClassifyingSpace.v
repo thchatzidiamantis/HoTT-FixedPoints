@@ -148,6 +148,36 @@ Section Eliminators.
 
 End Eliminators.
 
+(** We close the section, so we can use the above eliminators for different groups. *)
+
+(** A two-variable version of the non-dependent eliminator.  We could also have a dependent version, but since it is harder to state, we'll omit it for now. *)
+  Definition ClassifyingSpace_rec2 {G H : Group}
+    (P : Type) `{IsTrunc 1 P} (bbase' : P)
+    (bloop1 : G -> bbase' = bbase')
+    (bloop1_pp : forall x y : G, bloop1 (x * y) = bloop1 x @ bloop1 y)
+    (bloop2 : H -> bbase' = bbase')
+    (bloop2_pp : forall x y : H, bloop2 (x * y) = bloop2 x @ bloop2 y)
+    (bloop_comm : forall g h, bloop1 g @ bloop2 h = bloop2 h @ bloop1 g)
+    : ClassifyingSpace G -> ClassifyingSpace H -> P.
+  Proof.
+    pose (f1 := ClassifyingSpace_rec P bbase' bloop1 bloop1_pp).
+    intro bg.
+    srapply ClassifyingSpace_rec.
+    - exact (f1 bg).
+    - intro h.
+      revert bg; srapply ClassifyingSpace_ind_hset; cbn.
+      1: exact (bloop2 h).
+      intro g.
+      transport_paths (transport_paths_FlFr (f:=f1) (g:=f1) (bloop g) _).
+      rewrite ClassifyingSpace_rec_beta_bloop.
+      apply bloop_comm.
+    - cbn beta zeta.
+      intros x y.
+      revert bg; srapply ClassifyingSpace_ind_hprop.
+      cbn.
+      apply bloop2_pp.
+Defined.
+
 (** The classifying space is 0-connected. *)
 Instance isconnected_classifyingspace {G : Group}
   : IsConnected 0 (ClassifyingSpace G).
@@ -389,19 +419,16 @@ Proof.
       apply ap.
       exact (p x). }
     reflexivity.
-  (** Preservation of identity *)
+  (** Preservation of identity map *)
   - intros G.
     snapply Build_pHomotopy.
     { snapply ClassifyingSpace_ind_hset.
       1: exact _.
       1: reflexivity.
-      intro x.
-      rapply equiv_sq_dp^-1.
-      simpl.
-      rewrite ClassifyingSpace_rec_beta_bloop.
-      apply sq_1G.
-      symmetry.
-      apply ap_idmap. }
+      intro g; cbn.
+      transport_paths (transport_paths_Flr (f:=ClassifyingSpace_rec _ _ _ _) (bloop g) _).
+      apply equiv_p1_1q.
+      apply ClassifyingSpace_rec_beta_bloop. }
     reflexivity.
   (** Preservation of composition *)
   - intros G H K g f.
@@ -536,33 +563,37 @@ Proof.
 Defined.
 Transparent equiv_bg_pi1_adjoint.
 
+(** ** H-space structure on [B G] when [G] is abelian *)
+
+(** This will be used to prove that [B G] is an H-space when [G] is abelian, and has other uses as well. *)
+Definition fmap11_B {G H K : Group}
+  (f1 : G $-> K) (f2 : H $-> K)
+  (comm: forall g h, f1 g * f2 h = f2 h * f1 g)
+  : B G -> B H -> B K.
+Proof.
+  srapply ClassifyingSpace_rec2.
+  - exact bbase.
+  - exact (bloop o f1).
+  - intros g1 g2.
+    rhs_V napply bloop_pp.
+    apply ap, grp_homo_op.
+  - exact (bloop o f2).
+  - intros h1 h2.
+    rhs_V napply bloop_pp.
+    apply ap, grp_homo_op.
+  - intros g h.
+    refine ((bloop_pp _ _)^ @ _ @ bloop_pp _ _).
+    apply ap, comm.
+Defined.
+
 (** When [G] is an abelian group, [BG] is an H-space. *)
 Section HSpace_bg.
 
   Context {G : AbGroup}.
 
-  Definition bg_mul : B G -> B G -> B G.
-  Proof.
-    intro b.
-    snapply ClassifyingSpace_rec.
-    1: exact _.
-    1: exact b.
-    { intro x.
-      revert b.
-      snapply ClassifyingSpace_ind_hset.
-      1: exact _.
-      1: exact (bloop x).
-      cbn; intro y.
-      apply dp_paths_lr.
-      refine (concat_pp_p _ _ _ @ _).
-      apply moveR_Vp.
-      refine ((bloop_pp _ _)^ @ _ @ bloop_pp _ _).
-      apply ap, commutativity. }
-    intros x y.
-    revert b.
-    srapply ClassifyingSpace_ind_hprop.
-    exact (bloop_pp x y).
-  Defined.
+  (** The multiplication follows from [fmap11_B].  One can also construct it directly, which replaces some subterms that are essentially [fmap B pmap_idmap] with [idmap].  The approach using [fmap11_B] actually makes the proof of [bg_mul_symm] simpler, but [bg_mul_right_id] no longer holds definitionally. *)
+  Definition bg_mul : B G -> B G -> B G
+    := fmap11_B grp_homo_id grp_homo_id commutativity.
 
   Definition bg_mul_symm : forall x y, bg_mul x y = bg_mul y x.
   Proof.
@@ -570,32 +601,27 @@ Section HSpace_bg.
     srapply ClassifyingSpace_ind_hset.
     { simpl.
       revert x.
-      srapply ClassifyingSpace_ind_hset.
+      srapply ClassifyingSpace_ind_hset; cbn.
       1: reflexivity.
       intros x.
-      apply sq_dp^-1, sq_1G.
-      refine (ap_idmap _ @ _^).
-      napply ClassifyingSpace_rec_beta_bloop. }
+      exact (transport_paths_FlFr_1 (bloop x)). }
     intros y; revert x.
+    srapply ClassifyingSpace_ind_hprop.
     simpl.
-    snapply ClassifyingSpace_ind_hprop.
-    1: exact _.
-    simpl.
-    transport_paths Flr.
-    apply equiv_p1_1q.
-    napply ClassifyingSpace_rec_beta_bloop.
+    exact (transport_paths_FlFr_1 (bloop y)).
   Defined.
+
+  (** This is not definitionally true, but [bg_mul b bbase] is definitionally equal to [fmap B pmap_idmap], so we can use [fmap_id] to prove this. *)
+  Definition bg_mul_right_id
+    : forall b : B G, bg_mul b bbase = b
+    := fmap_id B G.
 
   Definition bg_mul_left_id
     : forall b : B G, bg_mul bbase b = b.
   Proof.
-    apply bg_mul_symm.
-  Defined.
-
-  Definition bg_mul_right_id
-    : forall b : B G, bg_mul b bbase = b.
-  Proof.
-    reflexivity.
+    intro b.
+    lhs napply bg_mul_symm.
+    apply bg_mul_right_id.
   Defined.
 
   #[export] Instance ishspace_bg : IsHSpace (B G)

@@ -129,14 +129,6 @@ Section Eliminators.
     apply path_ishprop.
   Defined.
 
-  Definition ClassifyingSpace_rec_hset
-    (P : Type) `{IsTrunc 0 P} (bbase' : P) (bloop' : G -> bbase' = bbase')
-    : ClassifyingSpace G -> P.
-  Proof.
-    srapply (ClassifyingSpace_rec P bbase' bloop' _).
-    intros; apply path_ishprop.
-  Defined.
-
   (** Similarly, when eliminating into an hprop, we only have to handle the basepoint. *)
   Definition ClassifyingSpace_ind_hprop (P : ClassifyingSpace G -> Type)
     `{forall b, IsTrunc (-1) (P b)} (bbase' : P bbase)

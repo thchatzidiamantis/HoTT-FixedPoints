@@ -256,3 +256,42 @@ Proof.
       srapply ClassifyingSpace_ind_hprop.
       exact (bloop_pp x.1 y.1). }
 Defined.
+
+(* This generalizes bg_mul, and should be used to prove that result.  But it relies on [fmap B], so the order in that file will need to change slightly. *)
+Definition fmap11_B {G H K : Group}
+  (h1 : G $-> K) (h2 : H $-> K)
+  (comm: forall g h, h2 g * h1 h = h1 h * h2 g)
+  : B G -> B H -> B K.
+Proof.
+  intro b.
+  srapply ClassifyingSpace_rec.
+  { revert b.
+    exact (fmap B h1). }
+  { intro h.
+    revert b.
+    srapply ClassifyingSpace_ind_hset; cbn beta.
+    { cbn. exact (bloop (h2 h)). }
+    intro g.
+    apply dp_paths_FlFr.
+    refine (concat_pp_p _ _ _ @ _).
+    apply moveR_Vp.
+    refine ((1 @@ ap_fmap_b h1 g) @ _ @ (ap_fmap_b h1 g @@ 1)^).
+    refine ((bloop_pp _ _)^ @ _ @ bloop_pp _ _).
+    apply ap, comm. }
+  cbn beta zeta.
+  intros x y.
+  revert b.
+  srapply ClassifyingSpace_ind_hprop.
+  cbn.
+  rhs_V napply bloop_pp.
+  apply ap, grp_homo_op.
+Defined.
+
+Definition map_bg_b_centralizer_grp_image'' `{F : Funext}
+  {G H : Group} (f : G $-> H)
+  : B (subtype_centralizer_subgroup (grp_image f)) -> (B G -> B H).
+Proof.
+  napply (fmap11_B (subgroup_incl _) f).
+  intros g h.
+  exact (h.2 (f g) (tr (g; idpath))).
+Defined.

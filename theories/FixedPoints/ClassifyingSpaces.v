@@ -249,12 +249,70 @@ Proof.
       exact (bloop_pp x.1 y.1). }
 Defined.
 
-Definition map_bg_b_centralizer_grp_image'' `{F : Funext}
-  {G H : Group} (f : G $-> H)
-  : B (subtype_centralizer_subgroup (grp_image f)) -> (B G -> B H).
+
+(** ** Products of classifying spaces *)
+
+Definition prod_bg_b_grp_prod (G H : Group)
+  : B (grp_prod G H) -> B G * B H.
 Proof.
-  napply (fmap11_B (subgroup_incl _) f).
-  intros h g; cbn.
-  symmetry.
-  exact (h.2 (f g) (tr (g; idpath))).
+  srapply ClassifyingSpace_rec.
+  { exact (bbase, bbase). }
+  { intros [g h].
+    exact (path_prod' (bloop g) (bloop h)). }
+  { intros [g1 h1] [g2 h2]; cbn.
+    by rewrite <- path_prod_pp, 2 bloop_pp. }
 Defined.
+
+Definition b_grp_prod_prod_bg (G H : Group)
+  : B G * B H -> B (grp_prod G H).
+Proof.
+  apply equiv_uncurry.
+  apply (fmap11_B grp_prod_inl grp_prod_inr).
+  intros g h; cbn.
+  by rewrite 2 grp_unit_l, 2 grp_unit_r.
+Defined.
+
+Definition equiv1 (G H : Group)
+  : (b_grp_prod_prod_bg G H) o (prod_bg_b_grp_prod G H) == idmap.
+Proof.
+  srapply ClassifyingSpace_ind_hset.
+  - reflexivity.
+  - intros [g h].
+    rapply equiv_sq_dp^-1.
+    apply equiv_sq_path.
+    rewrite ap_idmap, concat_p1, concat_1p.
+    rewrite ap_compose.
+    rewrite ClassifyingSpace_rec_beta_bloop.
+    rewrite ap_uncurry.
+    rewrite ap011_is_ap.
+    rewrite 2 ClassifyingSpace_rec_beta_bloop.
+    cbn.
+    rewrite <- bloop_pp.
+    apply ap.
+    exact (path_prod' (grp_unit_r _)^ (grp_unit_l _)^).
+Defined.
+
+Definition equiv2 (G H : Group)
+  : (prod_bg_b_grp_prod G H) o (b_grp_prod_prod_bg G H) == idmap.
+Proof.
+  intros [x y].
+  revert x.
+  srapply ClassifyingSpace_ind_hset.
+  { revert y.
+    srapply ClassifyingSpace_ind_hset.
+    - reflexivity.
+    - intro h.
+      rapply equiv_sq_dp^-1.
+      apply equiv_sq_path.
+      rewrite concat_p1, concat_1p.
+      rewrite (ap_compose
+                (A:=ClassifyingSpace H)
+                (fun x => b_grp_prod_prod_bg G H (bbase, x))
+                (prod_bg_b_grp_prod G H) (bloop h)).
+      
+      admit. }
+  { intro h.
+    rapply equiv_sq_dp^-1.
+    apply equiv_sq_path.
+    admit. }
+Admitted.

@@ -27,29 +27,33 @@ Local Open Scope path_scope.
 Definition subtype_centralizer {G : Group} (H : G -> Type)
   : G -> Type
   (* Note the order of operations here, we do this to match the original proofs for the centraliser of an element. *)
-  := fun g => (forall h : G, H h -> centralizer h g).
+  := fun g => merely (forall h : G, H h -> centralizer h g).
 
 (* Need Funext to prove that this [subtype_centralizer] is [HProp]-valued. *)
-(* jdc: we've discussed removing the assumption that the predicate on a subgroup is HProp-valued, as this is only used in a few places.  But for now, I don't see a way around this. *)
-Instance issubgroup_subtype_centralizer `{F : Funext}
+Instance issubgroup_subtype_centralizer
   {G : Group} (H : G -> Type)
   : IsSubgroup (subtype_centralizer H).
 Proof.
   srapply Build_IsSubgroup.
-  - intros h Hh.
+  - apply tr.
+    intros h Hh.
     exact (centralizer_unit h).
-  - intros x y cx cy h Hh.
+  - intros x y cx cy.
+    strip_truncations; apply tr.
+    intros h Hh.
     exact (centralizer_sgop _ _ _ (cx h Hh) (cy h Hh)).
-  - intros x Hx h Hh.
+  - intros x Hx.
+    strip_truncations; apply tr.
+    intros h Hh.
     exact (centralizer_inverse h x (Hx h Hh)).
 Defined.
 
-Definition subtype_centralizer_subgroup `{F : Funext}
+Definition subtype_centralizer_subgroup
   {G : Group} (H : G -> Type)
   := Build_Subgroup G (subtype_centralizer H) _.
 
 (* remove this later *)
-Definition b_subtype_centralizer `{F : Funext} {G : Group} (H : G -> Type)
+Definition b_subtype_centralizer {G : Group} (H : G -> Type)
   : Type.
 Proof.
   apply ClassifyingSpace.
@@ -57,7 +61,7 @@ Proof.
   exists (subtype_centralizer H); exact _.
 Defined.
 
-Definition grp_hom_centralizer_image_grp_hom `{F : Funext}
+Definition grp_hom_centralizer_image_grp_hom
   {G H : Group} (f : G $-> H)
   : grp_prod (subtype_centralizer_subgroup (grp_image f)) G
     $-> H.
@@ -66,6 +70,7 @@ Proof.
   1,2: intros [[x Cx] y].
   - exact (x * f y).
   - intros [[z Cz] w]; cbn.
+    strip_truncations.
     refine (grp_assoc _ (f y) (f w) @ _ # ap _ (grp_homo_op _ _ _)).
     lhs_V exact (ap (.* f w) (grp_assoc x z (f y))).
     lhs_V exact (ap (fun r => x * r * (f w)) (Cz (f y) (tr (y; 1)))).
@@ -109,30 +114,6 @@ Proof.
   1: exact (grp_image_homotopic_grp_homo (fun x => (p x)^)).
   1,2: by apply inv_grp_image_homotopic_grp_homo.
 Defined.
-
-Definition g `{F : Funext}
-  {G H : Group} {u v : G $-> H}
-  (conj : {h : H & forall g : G, u g = grp_conj h (v g)})
-  : subgroup_group (subtype_centralizer_subgroup (grp_image u))
-    $-> subgroup_group (subtype_centralizer_subgroup (grp_image v)).
-Proof.
-  srapply subgroup_corec.
-  + snapply Build_GroupHomomorphism.
-    -
-Admitted.
-
-Definition grp_hom_centralizer_image_grp_hom_conj `{F : Funext}
-  {G H : Group} (u : G $-> H) (h : H)
-  : GroupIsomorphism  
-    (subgroup_group (subtype_centralizer_subgroup (grp_image u)))
-    (subgroup_group (subtype_centralizer_subgroup (grp_image ((grp_conj h) $o u)))).
-Proof.
-  (* appply some lemma that if same subtypes lead to same centralizers. *)
-  srapply Build_GroupIsomorphism.
-  - srapply subgroup_corec.
-
-    
-Admitted.
 
 Definition conj_grp_homo {G H : Group} (u v : G $-> H)
   := merely {h : H & forall g : G, u g = grp_conj h (v g)}.
@@ -182,5 +163,5 @@ Proof.
   exact ch1.
 Defined.
 
-Definition groupreps `{U : Univalence} (G H : Group) : Type
+Definition groupreps (G H : Group) : Type
   := (@Quotient (G $-> H) (conj_grp_homo)).

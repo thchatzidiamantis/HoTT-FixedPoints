@@ -207,25 +207,16 @@ Definition equiv_groupreps_pi0_map_bg `{U : Univalence} (G H : Group)
 
 (** ** The fundamental group of [B G -> B H] *)
 
-(* Can I do this without funext? Use H-space structure. *)
-Definition map_bg_b_centralizer_grp_image `{F : Funext}
+Definition map_bg_b_centralizer_grp_image
   {G H : Group} (f : G $-> H)
   : B (subtype_centralizer_subgroup (grp_image f)) -> (B G -> B H).
 Proof.
-  intro c.
-  srapply ClassifyingSpace_rec.
-  1: exact bbase.
-  { intro g.
-    revert c.
-    srapply ClassifyingSpace_ind_hset.
-    - exact (bloop (f g)).
-    - intros [x cx].
-      refine (transport_const _ _ @ _).
-      admit.
-   }
-  
-    
-Admitted.
+  napply (fmap11_B (subgroup_incl _) f).
+  intros [h ch] g; cbn.
+  symmetry.
+  strip_truncations.
+  exact (ch (f g) (tr (g; idpath))).
+Defined.
 
 Definition map_bg_b_centralizer_grp_image' `{F : Funext}
   {G H : Group} (f : G $-> H)
@@ -247,6 +238,7 @@ Proof.
       lhs apply (bloop_pp h (f g))^.
       rhs apply (bloop_pp (f g) h)^.
       apply ap.
+      strip_truncations.
       exact (ch _ (grp_image_in f g))^. }
     { cbn beta.
       intros x y.

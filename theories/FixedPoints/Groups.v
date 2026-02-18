@@ -29,7 +29,6 @@ Definition subtype_centralizer {G : Group} (H : G -> Type)
   (* Note the order of operations here, we do this to match the original proofs for the centraliser of an element. *)
   := fun g => merely (forall h : G, H h -> centralizer h g).
 
-(* Need Funext to prove that this [subtype_centralizer] is [HProp]-valued. *)
 Instance issubgroup_subtype_centralizer
   {G : Group} (H : G -> Type)
   : IsSubgroup (subtype_centralizer H).
@@ -164,4 +163,4 @@ Proof.
 Defined.
 
 Definition groupreps (G H : Group) : Type
-  := (@Quotient (G $-> H) (conj_grp_homo)).
+  := @Quotient (G $-> H) (conj_grp_homo).

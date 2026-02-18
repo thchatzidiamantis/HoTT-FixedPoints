@@ -266,7 +266,7 @@ Defined.
 Definition b_grp_prod_prod_bg (G H : Group)
   : B G * B H -> B (grp_prod G H).
 Proof.
-  apply equiv_uncurry.
+  apply uncurry.
   apply (fmap11_B grp_prod_inl grp_prod_inr).
   intros g h; cbn.
   by rewrite 2 grp_unit_l, 2 grp_unit_r.
@@ -278,18 +278,18 @@ Proof.
   srapply ClassifyingSpace_ind_hset.
   - reflexivity.
   - intros [g h].
-    rapply equiv_sq_dp^-1.
-    apply equiv_sq_path.
-    rewrite ap_idmap, concat_p1, concat_1p.
-    rewrite ap_compose.
+    unfold DPath.
+    transport_paths FFlr.
+    apply equiv_p1_1q.
     rewrite ClassifyingSpace_rec_beta_bloop.
-    rewrite ap_uncurry.
-    rewrite ap011_is_ap.
+    unfold b_grp_prod_prod_bg.
+    lhs napply (ap_uncurry _ (bloop g) (bloop h)).
+    rewrite ap011_is_ap. (* Try lhs? *)
     rewrite 2 ClassifyingSpace_rec_beta_bloop.
     cbn.
-    rewrite <- bloop_pp.
+    lhs_V napply bloop_pp.
     apply ap.
-    exact (path_prod' (grp_unit_r _)^ (grp_unit_l _)^).
+    exact (path_prod' (grp_unit_r _) (grp_unit_l _)).
 Defined.
 
 Definition equiv2 (G H : Group)
@@ -299,17 +299,13 @@ Proof.
   revert x.
   srapply ClassifyingSpace_ind_hset.
   { revert y.
+    cbn beta.
     srapply ClassifyingSpace_ind_hset.
     - reflexivity.
     - intro h.
-      rapply equiv_sq_dp^-1.
-      apply equiv_sq_path.
-      rewrite concat_p1, concat_1p.
-      rewrite (ap_compose
-                (A:=ClassifyingSpace H)
-                (fun x => b_grp_prod_prod_bg G H (bbase, x))
-                (prod_bg_b_grp_prod G H) (bloop h)).
-      
+      unfold DPath.
+      transport_paths FFFlFr.
+      apply equiv_p1_1q.
       admit. }
   { intro h.
     rapply equiv_sq_dp^-1.

@@ -37,6 +37,7 @@ Proof.
     by rhs rapply (ap bloop (grp_inv_gV_g _ g)).
 Defined.
 
+(* jdc: Is this needed?  Since [istrunc_arrow] is already an instance, I would have expected it to be found. And the file builds fine for me without this. *)
 Local Instance istrunc_map_bg (G H : Group) `{Funext}
   : IsTrunc 1 (B G -> B H)
   := istrunc_arrow.
@@ -170,19 +171,20 @@ Definition equiv_groupreps_pi0_map_bg `{U : Univalence} (G H : Group)
 (** ** The fundamental group of [B G -> B H] *)
 
 Definition ClassifyingSpace_rec2_beta_bloop1 {G H : Group}
-    (P : Type) `{IsTrunc 1 P} (bbase' : P)
-    (bloop1 : G -> bbase' = bbase')
-    (bloop1_pp : forall x y : G, bloop1 (x * y) = bloop1 x @ bloop1 y)
-    (bloop2 : H -> bbase' = bbase')
-    (bloop2_pp : forall x y : H, bloop2 (x * y) = bloop2 x @ bloop2 y)
-    (bloop_comm : forall g h, bloop1 g @ bloop2 h = bloop2 h @ bloop1 g)
-    (g : G)
+  (P : Type) `{IsTrunc 1 P} (bbase' : P)
+  (bloop1 : G -> bbase' = bbase')
+  (bloop1_pp : forall x y : G, bloop1 (x * y) = bloop1 x @ bloop1 y)
+  (bloop2 : H -> bbase' = bbase')
+  (bloop2_pp : forall x y : H, bloop2 (x * y) = bloop2 x @ bloop2 y)
+  (bloop_comm : forall g h, bloop1 g @ bloop2 h = bloop2 h @ bloop1 g)
+  (g : G)
   : ap10 (ap (ClassifyingSpace_rec2 P bbase' bloop1 bloop1_pp bloop2 bloop2_pp bloop_comm)
           (bloop g))
       bbase = (bloop1 g).
 Proof.
   lhs_V napply ap_apply_Fl.
-  by lhs napply (ClassifyingSpace_rec_beta_bloop P bbase' bloop1 bloop1_pp _).
+  cbn.
+  rapply ClassifyingSpace_rec_beta_bloop.
 Defined.
 
 Definition map_bg_b_centralizer_grp_image {G H : Group} (f : G $-> H)
@@ -227,64 +229,86 @@ Proof.
 Defined.
 
 Definition loops_map_bg_centralizer_grp_image {G H : Group} (f : G $-> H)
-  : (subtype_centralizer_subgroup (grp_image f))
-      -> loops [(B G -> B H), (fmap B f)]
+  : subtype_centralizer_subgroup (grp_image f)
+      -> loops [B G -> B H, fmap B f]
   := fun x => ap (map_bg_b_centralizer_grp_image f) (bloop x).
 
 Definition pi1_map_bg_centralizer_grp_image {G H : Group} (f : G $-> H)
-  : (subtype_centralizer_subgroup (grp_image f))
-      -> Pi 1 [(B G -> B H), (fmap B f)]
-  := fun x => tr (ap (map_bg_b_centralizer_grp_image f) (bloop x)).
+  : subtype_centralizer_subgroup (grp_image f)
+      -> Pi 1 [B G -> B H, fmap B f]
+  := tr o (loops_map_bg_centralizer_grp_image f).
 
-Definition ap11_is_ap01_ap10 {A B} {f g:A->B} (h:g=f) {x y:A} (p:x=y)
-: ap11 h p = ap g p @ (ap10 h y).
+Definition ap11_is_ap01_ap10 {A B} {f g : A -> B} (h : g = f) {x y : A} (p : x = y)
+  : ap11 h p = ap g p @ ap10 h y.
 Proof.
   by path_induction.
 Defined.
 
 Definition centralizer_grp_image_pi1_map_bg `{U : Univalence}
   {G H : Group} (f : G $-> H)
-  : Pi 1 [(B G -> B H), (fmap B f)]
-      -> (subtype_centralizer_subgroup (grp_image f)).
+  : Pi 1 [B G -> B H, fmap B f]
+    -> subtype_centralizer_subgroup (grp_image f).
 Proof.
   intro p.
   strip_truncations; change (pointed_fun (fmap B f) = (fmap B f)) in p.
-  exists (pequiv_loops_bg_g (ap10 p bbase)).
+  exists (bloop^-1 (ap10 p bbase)).
+  unfold subtype_centralizer_subgroup, subgroup_pred, subtype_centralizer.
   apply tr.
   intros h sh.
   strip_truncations.
   unfold centralizer.
-  (* TODO: make the next 10 lines faster. *)
-  lhs_V srapply (eissect equiv_g_loops_bg _).
-  rhs_V srapply (eissect equiv_g_loops_bg (pequiv_loops_bg_g (ap10 p bbase) * h)).
-  cbn.
+  apply (equiv_inj bloop).
   rewrite 2 bloop_pp.
-  change (equiv_g_loops_bg^-1
-            (equiv_g_loops_bg h @ equiv_g_loops_bg
-              (pequiv_loops_bg_g (ap10 p bbase)))
-          = equiv_g_loops_bg^-1
-            (equiv_g_loops_bg
-              (pequiv_loops_bg_g (ap10 p bbase)) @ equiv_g_loops_bg h)).
-  rewrite (eisretr equiv_g_loops_bg (ap10 p bbase)).
-  apply ap.
-  cbn.
-  rewrite sh.2^.
+  rewrite (eisretr bloop (ap10 p bbase)).
+  destruct sh as [g []]; clear h.
   rewrite <- ap_fmap_b.
-  rhs_V srapply (ap11_is_ap10_ap01 p (bloop sh.1)).
-  lhs_V srapply (ap11_is_ap01_ap10 p (bloop sh.1)).
-  reflexivity.
+  rhs_V napply (ap11_is_ap10_ap01 p (bloop g)).
+  symmetry; napply ap11_is_ap01_ap10.
 Defined.
 
 Definition equivpi1_1 `{U : Univalence} {G H : Group} (f : G $-> H)
-  : (centralizer_grp_image_pi1_map_bg f) o (pi1_map_bg_centralizer_grp_image f) == idmap.
+  : centralizer_grp_image_pi1_map_bg f o pi1_map_bg_centralizer_grp_image f == idmap.
 Proof.
   intros [h ch]; strip_truncations.
-  apply path_sigma_hprop.
-  lhs_V srapply (eissect equiv_g_loops_bg _).
-  rhs_V srapply (eissect equiv_g_loops_bg h).
-  apply ap.
-  rewrite eisretr.
-  by rewrite ClassifyingSpace_rec2_beta_bloop1.
+  apply path_sigma_hprop; unfold ".1".
+  (* The goal is secretly of the form "bloop^-1 foo = h". *)
+  apply (moveR_equiv_V (f:=bloop)).
+  Time napply ClassifyingSpace_rec2_beta_bloop1. (* Around 0.1s *)
+(* I tried unfolding things and filling in most arguments to ClassifyingSpace_rec2_beta_bloop1, but couldn't figure out a way to make it faster.  0.1s is not that bad, but I thought it would be easy to fix.  I'll leave my attempts here for now, but they can be deleted.
+  unfold loops_map_bg_centralizer_grp_image.
+  unfold map_bg_b_centralizer_grp_image.
+  simpl.
+  unfold subgroup_incl.
+  simpl.
+  unfold fmap11_B.
+  simpl.
+  Time exact (ClassifyingSpace_rec2_beta_bloop1
+                (G:=subtype_centralizer_subgroup (grp_image f))
+                (ClassifyingSpace H)
+                bbase
+                (fun k => bloop k.1)
+                (fun g1 g2 : {x : _ &
+                                    subtype_centralizer
+                                      (fun y : H => Tr (-1) {x0 : G & f x0 = y}) x} =>
+                   1 @ bloop_pp g1.1 g2.1)
+                (bloop o f)
+                (fun x0 y : G => ap bloop (grp_homo_op f x0 y) @ bloop_pp (f x0) (f y))
+                (fun
+                    (g : {x : _ &
+                                subtype_centralizer
+                                  (fun y : H => Tr (-1) {x0 : G & f x0 = y}) x})
+                    (h0 : G) =>
+                    ((bloop_pp g.1 (f h0))^ @ ap bloop
+                                              (Trunc_ind
+                                                 (fun _ : Trunc (-1) (forall h1 : H, _ -> _) =>
+                                                    f h0 * g.1 = g.1 * f h0)
+                                                 (fun ch1 : forall h1 : H,
+                                                      Tr (-1) {x0 : G & _} ->
+                                                      centralizer h1 g.1 =>
+                                                    ch1 (f h0) (tr (h0; 1)))
+                                                 g.2)^) @ bloop_pp (f h0) g.1)
+                (h; tr ch)).
+*)
 Defined.
 
 (** ** Products of classifying spaces *)

@@ -37,6 +37,10 @@ Proof.
     by rhs rapply (ap bloop (grp_inv_gV_g _ g)).
 Defined.
 
+Local Instance istrunc_map_bg (G H : Group) `{Funext}
+  : IsTrunc 1 (B G -> B H)
+  := istrunc_arrow.
+
 (** ** Connected components of [B G -> B H] *)
 
 Definition pi0_map_bg_groupreps `{U : Univalence} (G H : Group)
@@ -123,48 +127,6 @@ Proof.
   apply ap, inj_gf, p.
 Defined.
 
-Definition issurj_pi0_map_bg_groupreps `{U : Univalence} {G H : Group}
-  : IsSurjection (pi0_map_bg_groupreps G H).
-Proof.
-  apply BuildIsSurjection.
-  intro f.
-  strip_truncations.
-  (* Since [B H] is connected and our goal is a proposition, we can assume that [f] is pointed. *)
-  pose proof (q:=merely_path_is0connected (B H) (f bbase) bbase).
-  strip_truncations.
-  (* The next three lines replace [f] by [pointed_fun fp] for a general pointed map [fp]. *)
-  pose (fp:=Build_pMap f q).
-  change f with (pointed_fun fp).
-  clearbody fp; clear q f.
-
-  (* The previous five lines can be replaced by the following, which is just using that the forgetful map [pointed_fun] is surjective. This last fact is proved as the subgoal, but could be made into a lemma.  So even though this is a bit longer, it is more conceptual, so I think it's better. *)
-  (*
-  revert f.
-  rapply (conn_map_elim (-1) (pointed_fun : (B G ->* B H) -> _)).
-  { intro f.
-    rapply contr_inhabited_hprop.
-    pose proof (q:=merely_path_is0connected (B H) (f bbase) bbase).
-    strip_truncations; apply tr.
-    exists (Build_pMap f q).
-    reflexivity. }
-  intro fp.
-  *)
-
-  apply tr.
-  exists (class_of _ ((equiv_grp_homo_pmap_bg _ _)^-1 fp)).
-  change (_ = ?R) with (tr (pointed_fun (fmap B ((equiv_grp_homo_pmap_bg G H)^-1 fp))) = R).
-  apply ap.
-  (* Reveal [pointed_fun], to make things more clear to the reader. *)
-  Set Printing Coercions.
-  (* Our goal is an equality of *unpointed* maps.  Let's upgrade it to an equality of pointed maps. *)
-  apply ap.
-  Unset Printing Coercions.
-  apply eisretr.
-  (* jdc: I'm not sure what was going on, but it was the [unfold Trunc_ind] that was causing it.  Doing the unfolding all at once to get to the goal we expect made the problem go away. *)
-Defined.
-
-(* jdc: while investigating the above, I came up with a shorter, more conceptual proof, which I have included below.  It actually had the same private inductive error, which was also fixed by using a [change] tactic.  I think we should delete the proof above.  (Feel free to delete comments like this when no longer needed.) *)
-
 (** When [Y] is connected, every function [X -> Y] is merely pointed, so [pointed_fun] is a surjection. *)
 Instance issurj_pointed_fun_conn `{Univalence} {X Y : pType} `{IsConnected 0 Y}
   : IsSurjection (pointed_fun : (X ->* Y) -> (X -> Y)).
@@ -184,7 +146,7 @@ Defined.
                 pi0_map_bg_groupreps
 >>
     To show that [pi0_map_bg_groupreps] is surjective, it suffices to show that this is true after precomposition with [gq], and so we just need to show that the other three maps are surjective.  Rocq can prove these by typeclass search, with one hint for [tr]. *)
-Definition issurj_pi0_map_bg_groupreps' `{U : Univalence} {G H : Group}
+Definition issurj_pi0_map_bg_groupreps `{U : Univalence} {G H : Group}
   : IsSurjection (pi0_map_bg_groupreps G H).
 Proof.
   apply (cancelR_issurjection (class_of _)).
@@ -207,8 +169,23 @@ Definition equiv_groupreps_pi0_map_bg `{U : Univalence} (G H : Group)
 
 (** ** The fundamental group of [B G -> B H] *)
 
-Definition map_bg_b_centralizer_grp_image
-  {G H : Group} (f : G $-> H)
+Definition ClassifyingSpace_rec2_beta_bloop1 {G H : Group}
+    (P : Type) `{IsTrunc 1 P} (bbase' : P)
+    (bloop1 : G -> bbase' = bbase')
+    (bloop1_pp : forall x y : G, bloop1 (x * y) = bloop1 x @ bloop1 y)
+    (bloop2 : H -> bbase' = bbase')
+    (bloop2_pp : forall x y : H, bloop2 (x * y) = bloop2 x @ bloop2 y)
+    (bloop_comm : forall g h, bloop1 g @ bloop2 h = bloop2 h @ bloop1 g)
+    (g : G)
+  : ap10 (ap (ClassifyingSpace_rec2 P bbase' bloop1 bloop1_pp bloop2 bloop2_pp bloop_comm)
+          (bloop g))
+      bbase = (bloop1 g).
+Proof.
+  lhs_V napply ap_apply_Fl.
+  by lhs napply (ClassifyingSpace_rec_beta_bloop P bbase' bloop1 bloop1_pp _).
+Defined.
+
+Definition map_bg_b_centralizer_grp_image {G H : Group} (f : G $-> H)
   : B (subtype_centralizer_subgroup (grp_image f)) -> (B G -> B H).
 Proof.
   napply (fmap11_B (subgroup_incl _) f).
@@ -240,15 +217,75 @@ Proof.
       apply ap.
       strip_truncations.
       exact (ch _ (grp_image_in f g))^. }
-    { cbn beta.
-      intros x y.
-      rewrite <- path_forall_pp.
-      apply ap.
-      apply path_forall.
-      srapply ClassifyingSpace_ind_hprop.
-      exact (bloop_pp x.1 y.1). }
+  { cbn beta.
+    intros x y.
+    rewrite <- path_forall_pp.
+    apply ap.
+    apply path_forall.
+    srapply ClassifyingSpace_ind_hprop.
+    exact (bloop_pp x.1 y.1). }
 Defined.
 
+Definition loops_map_bg_centralizer_grp_image {G H : Group} (f : G $-> H)
+  : (subtype_centralizer_subgroup (grp_image f))
+      -> loops [(B G -> B H), (fmap B f)]
+  := fun x => ap (map_bg_b_centralizer_grp_image f) (bloop x).
+
+Definition pi1_map_bg_centralizer_grp_image {G H : Group} (f : G $-> H)
+  : (subtype_centralizer_subgroup (grp_image f))
+      -> Pi 1 [(B G -> B H), (fmap B f)]
+  := fun x => tr (ap (map_bg_b_centralizer_grp_image f) (bloop x)).
+
+Definition ap11_is_ap01_ap10 {A B} {f g:A->B} (h:g=f) {x y:A} (p:x=y)
+: ap11 h p = ap g p @ (ap10 h y).
+Proof.
+  by path_induction.
+Defined.
+
+Definition centralizer_grp_image_pi1_map_bg `{U : Univalence}
+  {G H : Group} (f : G $-> H)
+  : Pi 1 [(B G -> B H), (fmap B f)]
+      -> (subtype_centralizer_subgroup (grp_image f)).
+Proof.
+  intro p.
+  strip_truncations; change (pointed_fun (fmap B f) = (fmap B f)) in p.
+  exists (pequiv_loops_bg_g (ap10 p bbase)).
+  apply tr.
+  intros h sh.
+  strip_truncations.
+  unfold centralizer.
+  (* TODO: make the next 10 lines faster. *)
+  lhs_V srapply (eissect equiv_g_loops_bg _).
+  rhs_V srapply (eissect equiv_g_loops_bg (pequiv_loops_bg_g (ap10 p bbase) * h)).
+  cbn.
+  rewrite 2 bloop_pp.
+  change (equiv_g_loops_bg^-1
+            (equiv_g_loops_bg h @ equiv_g_loops_bg
+              (pequiv_loops_bg_g (ap10 p bbase)))
+          = equiv_g_loops_bg^-1
+            (equiv_g_loops_bg
+              (pequiv_loops_bg_g (ap10 p bbase)) @ equiv_g_loops_bg h)).
+  rewrite (eisretr equiv_g_loops_bg (ap10 p bbase)).
+  apply ap.
+  cbn.
+  rewrite sh.2^.
+  rewrite <- ap_fmap_b.
+  rhs_V srapply (ap11_is_ap10_ap01 p (bloop sh.1)).
+  lhs_V srapply (ap11_is_ap01_ap10 p (bloop sh.1)).
+  reflexivity.
+Defined.
+
+Definition equivpi1_1 `{U : Univalence} {G H : Group} (f : G $-> H)
+  : (centralizer_grp_image_pi1_map_bg f) o (pi1_map_bg_centralizer_grp_image f) == idmap.
+Proof.
+  intros [h ch]; strip_truncations.
+  apply path_sigma_hprop.
+  lhs_V srapply (eissect equiv_g_loops_bg _).
+  rhs_V srapply (eissect equiv_g_loops_bg h).
+  apply ap.
+  rewrite eisretr.
+  by rewrite ClassifyingSpace_rec2_beta_bloop1.
+Defined.
 
 (** ** Products of classifying spaces *)
 
@@ -292,6 +329,7 @@ Proof.
     exact (path_prod' (grp_unit_r _) (grp_unit_l _)).
 Defined.
 
+(* TODO: Write a ClassifyingSpace_ind2_hset and computation rules for ClassifyingSpace_rec2. *)
 Definition equiv2 (G H : Group)
   : (prod_bg_b_grp_prod G H) o (b_grp_prod_prod_bg G H) == idmap.
 Proof.

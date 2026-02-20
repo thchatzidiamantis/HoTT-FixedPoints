@@ -169,6 +169,7 @@ Definition equiv_groupreps_pi0_map_bg `{U : Univalence} (G H : Group)
 (* jdc: Also, [G] was not needed either, so I removed it and renamed the arguments. *)
 (* jdc: Then I realized that this can be generalized to give a homotopy beween two functions, which gives a more natural statement. I have put this in the main ClassifyingSpace.v file as [ClassifyingSpace_rec_homotopy].  The [p] and [bloop_comm] there are exactly what you'd expect to give a path between the sigma type of the first two arguments (except that you give a homotopy);  the third "_pp" argument is in a proposition so doesn't need to be compared.  Compare this to results containing the string "_homotop" in Colimits/*, for example, where some slightly different design choices are made. So maybe we should drop the _rec_loop version below?  Or keep it, but with a one-liner proof? *)
 (* jdc: With the further changes I made below, the _beta_bloop1 and _beta_bloop1' results aren't needed, and therefore _rec_loop is not needed either.  So not sure whether they are worth keeping around. *)
+(* tcc: Replacing it with the one-liner proof seems good to me, it still computes nicely. I don't know if these will be useful if I try to write a [ClassifyingSpace_ind2] and its computation rules. *)
 Definition ClassifyingSpace_rec_loop {G : Group}
   (P : Type) `{IsTrunc 1 P} (bbase' : P)
   (bloop' : G -> bbase' = bbase')
@@ -207,6 +208,7 @@ Proof.
 Defined.
 
 (* jdc: Even though this is no longer needed, I wonder if it's still worth keeping?  Maybe just keep the conclusion in a comment, for future reference? *)
+(* tcc: I think it's worth keeping _beta_bloop1, I don't like _beta_bloop1' since it is basically the same thing but uses funext. *)
 Definition ClassifyingSpace_rec2_beta_bloop1 {G H : Group}
   (P : Type) `{IsTrunc 1 P} (bbase' : P)
   (bloop1 : G -> bbase' = bbase')
@@ -250,37 +252,6 @@ Proof.
   exact (ch (f g) (tr (g; idpath))).
 Defined.
 
-Definition map_bg_b_centralizer_grp_image' `{F : Funext}
-  {G H : Group} (f : G $-> H)
-  : B (subtype_centralizer_subgroup (grp_image f)) -> (B G -> B H).
-Proof.
-  srapply ClassifyingSpace_rec.
-  { exact (pointed_fun (fmap B f)). }
-  { intros [h ch].
-    unfold subtype_centralizer_subgroup, subtype_centralizer, centralizer in ch; cbn in ch.
-    apply path_forall.
-    srapply ClassifyingSpace_ind_hset; cbn beta.
-    - simpl.
-      exact (bloop h).
-    - intro g.
-      rapply equiv_sq_dp^-1.
-      apply equiv_sq_path.
-      lhs apply (ap (fun y => (bloop h) @ y) (ap_fmap_b f g)).
-      rhs apply (ap (fun y => y @ (bloop h)) (ap_fmap_b f g)).
-      lhs apply (bloop_pp h (f g))^.
-      rhs apply (bloop_pp (f g) h)^.
-      apply ap.
-      strip_truncations.
-      exact (ch _ (grp_image_in f g))^. }
-  { cbn beta.
-    intros x y.
-    rewrite <- path_forall_pp.
-    apply ap.
-    apply path_forall.
-    srapply ClassifyingSpace_ind_hprop.
-    exact (bloop_pp x.1 y.1). }
-Defined.
-
 Definition loops_map_bg_centralizer_grp_image {G H : Group} (f : G $-> H)
   : subtype_centralizer_subgroup (grp_image f)
       -> loops [B G -> B H, fmap B f]
@@ -291,6 +262,7 @@ Definition pi1_map_bg_centralizer_grp_image {G H : Group} (f : G $-> H)
       -> Pi 1 [B G -> B H, fmap B f]
   := tr o (loops_map_bg_centralizer_grp_image f).
 
+(* tcc: I had some weird formatting here before, but it was copied from [ap11_is_ap10_ap01] in PathGroupoids.v, which is probably where this should be added. *)
 Definition ap11_is_ap01_ap10 {A B} {f g : A -> B} (h : g = f) {x y : A} (p : x = y)
   : ap11 h p = ap g p @ ap10 h y.
 Proof.
@@ -405,7 +377,7 @@ Proof.
     exact (path_prod' (grp_unit_r _) (grp_unit_l _)).
 Defined.
 
-(* TODO: Write a ClassifyingSpace_ind2_hset and computation rules for ClassifyingSpace_rec2. *)
+(* TODO: Write a ClassifyingSpace_ind2_hset. *)
 Definition equiv2 (G H : Group)
   : (prod_bg_b_grp_prod G H) o (b_grp_prod_prod_bg G H) == idmap.
 Proof.

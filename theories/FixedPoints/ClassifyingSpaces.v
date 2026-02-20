@@ -324,45 +324,10 @@ Definition centralizer_grp_image_pi1_map_bg_pi1_map_bg_centralizer_grp_image
   : centralizer_grp_image_pi1_map_bg f o pi1_map_bg_centralizer_grp_image f == idmap.
 Proof.
   intros [h ch]; strip_truncations.
-  apply path_sigma_hprop; unfold ".1".
-  (* The goal is secretly of the form "bloop^-1 foo = h". *)
+  apply path_sigma_hprop.
+  cbn -[isequiv_bloop].
   apply (moveR_equiv_V (f:=bloop)).
-  Time napply ClassifyingSpace_rec2_beta_bloop1_bbase. (* Around 0.1s *)
-(* I tried unfolding things and filling in most arguments to ClassifyingSpace_rec2_beta_bloop1, but couldn't figure out a way to make it faster.  0.1s is not that bad, but I thought it would be easy to fix.  I'll leave my attempts here for now, but they can be deleted.
-  unfold loops_map_bg_centralizer_grp_image.
-  unfold map_bg_b_centralizer_grp_image.
-  simpl.
-  unfold subgroup_incl.
-  simpl.
-  unfold fmap11_B.
-  simpl.
-  Time exact (ClassifyingSpace_rec2_beta_bloop1
-                (G:=subtype_centralizer_subgroup (grp_image f))
-                (ClassifyingSpace H)
-                bbase
-                (fun k => bloop k.1)
-                (fun g1 g2 : {x : _ &
-                                    subtype_centralizer
-                                      (fun y : H => Tr (-1) {x0 : G & f x0 = y}) x} =>
-                   1 @ bloop_pp g1.1 g2.1)
-                (bloop o f)
-                (fun x0 y : G => ap bloop (grp_homo_op f x0 y) @ bloop_pp (f x0) (f y))
-                (fun
-                    (g : {x : _ &
-                                subtype_centralizer
-                                  (fun y : H => Tr (-1) {x0 : G & f x0 = y}) x})
-                    (h0 : G) =>
-                    ((bloop_pp g.1 (f h0))^ @ ap bloop
-                                              (Trunc_ind
-                                                 (fun _ : Trunc (-1) (forall h1 : H, _ -> _) =>
-                                                    f h0 * g.1 = g.1 * f h0)
-                                                 (fun ch1 : forall h1 : H,
-                                                      Tr (-1) {x0 : G & _} ->
-                                                      centralizer h1 g.1 =>
-                                                    ch1 (f h0) (tr (h0; 1)))
-                                                 g.2)^) @ bloop_pp (f h0) g.1)
-                (h; tr ch)).
-*)
+  napply ClassifyingSpace_rec2_beta_bloop1_bbase.
 Defined.
 
 Definition pi1_map_bg_centralizer_grp_image_centralizer_grp_image_pi1_map_bg

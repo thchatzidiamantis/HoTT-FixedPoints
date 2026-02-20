@@ -37,11 +37,6 @@ Proof.
     by rhs rapply (ap bloop (grp_inv_gV_g _ g)).
 Defined.
 
-(* jdc: Is this needed?  Since [istrunc_arrow] is already an instance, I would have expected it to be found. And the file builds fine for me without this. *)
-Local Instance istrunc_map_bg (G H : Group) `{Funext}
-  : IsTrunc 1 (B G -> B H)
-  := istrunc_arrow.
-
 (** ** Connected components of [B G -> B H] *)
 
 Definition pi0_map_bg_groupreps `{U : Univalence} (G H : Group)
@@ -170,7 +165,28 @@ Definition equiv_groupreps_pi0_map_bg `{U : Univalence} (G H : Group)
 
 (** ** The fundamental group of [B G -> B H] *)
 
-Definition ClassifyingSpace_rec2_beta_bloop1 {G H : Group}
+Definition ClassifyingSpace_rec2_helper {G H : Group}
+  (P : Type) `{IsTrunc 1 P} (bbase' : P)
+  (bloop1 : G -> bbase' = bbase')
+  (bloop1_pp : forall x y : G, bloop1 (x * y) = bloop1 x @ bloop1 y)
+  (bloop2 : H -> bbase' = bbase')
+  (bloop2_pp : forall x y : H, bloop2 (x * y) = bloop2 x @ bloop2 y)
+  (bloop_comm : forall g h, bloop1 g @ bloop2 h = bloop2 h @ bloop1 g)
+  (g : G) (x : B H)
+  : (ClassifyingSpace_rec P bbase' bloop2 bloop2_pp x)
+    = (ClassifyingSpace_rec P bbase' bloop2 bloop2_pp x).
+Proof.
+  revert x.
+  srapply ClassifyingSpace_ind_hset.
+  - exact (bloop1 g).
+  - intro h.
+    rapply equiv_sq_dp^-1.
+    apply equiv_sq_path.
+    rewrite ClassifyingSpace_rec_beta_bloop.
+    rapply bloop_comm.
+Defined.
+
+Definition ClassifyingSpace_rec2_beta_bloop1_bbase {G H : Group}
   (P : Type) `{IsTrunc 1 P} (bbase' : P)
   (bloop1 : G -> bbase' = bbase')
   (bloop1_pp : forall x y : G, bloop1 (x * y) = bloop1 x @ bloop1 y)
@@ -185,6 +201,43 @@ Proof.
   lhs_V napply ap_apply_Fl.
   cbn.
   rapply ClassifyingSpace_rec_beta_bloop.
+Defined.
+
+Definition ClassifyingSpace_rec2_beta_bloop1 {G H : Group}
+  (P : Type) `{IsTrunc 1 P} (bbase' : P)
+  (bloop1 : G -> bbase' = bbase')
+  (bloop1_pp : forall x y : G, bloop1 (x * y) = bloop1 x @ bloop1 y)
+  (bloop2 : H -> bbase' = bbase')
+  (bloop2_pp : forall x y : H, bloop2 (x * y) = bloop2 x @ bloop2 y)
+  (bloop_comm : forall g h, bloop1 g @ bloop2 h = bloop2 h @ bloop1 g)
+  (g : G) (x : B H)
+  : ap10 (ap (ClassifyingSpace_rec2 P bbase' bloop1 bloop1_pp bloop2 bloop2_pp bloop_comm)
+          (bloop g)) x
+    = (ClassifyingSpace_rec2_helper P bbase' bloop1 bloop1_pp bloop2 bloop2_pp bloop_comm g x).
+Proof.
+  revert x.
+  rapply ClassifyingSpace_ind_hprop.
+  napply ClassifyingSpace_rec2_beta_bloop1_bbase.
+Defined.
+
+Definition ClassifyingSpace_rec2_beta_bloop1' `{F : Funext} {G H : Group}
+  (P : Type) `{IsTrunc 1 P} (bbase' : P)
+  (bloop1 : G -> bbase' = bbase')
+  (bloop1_pp : forall x y : G, bloop1 (x * y) = bloop1 x @ bloop1 y)
+  (bloop2 : H -> bbase' = bbase')
+  (bloop2_pp : forall x y : H, bloop2 (x * y) = bloop2 x @ bloop2 y)
+  (bloop_comm : forall g h, bloop1 g @ bloop2 h = bloop2 h @ bloop1 g)
+  (g : G)
+  : ap (ClassifyingSpace_rec2 P bbase' bloop1 bloop1_pp bloop2 bloop2_pp bloop_comm)
+      (bloop g)
+    = path_forall _ _
+        (ClassifyingSpace_rec2_helper P bbase' bloop1 bloop1_pp bloop2 bloop2_pp bloop_comm g).
+Proof.
+  apply (equiv_inj ap10).
+  rewrite eisretr.
+  apply path_forall.
+  intro x.
+  napply ClassifyingSpace_rec2_beta_bloop1.
 Defined.
 
 Definition map_bg_b_centralizer_grp_image {G H : Group} (f : G $-> H)
@@ -266,14 +319,15 @@ Proof.
   symmetry; napply ap11_is_ap01_ap10.
 Defined.
 
-Definition equivpi1_1 `{U : Univalence} {G H : Group} (f : G $-> H)
+Definition centralizer_grp_image_pi1_map_bg_pi1_map_bg_centralizer_grp_image
+  `{U : Univalence} {G H : Group} (f : G $-> H)
   : centralizer_grp_image_pi1_map_bg f o pi1_map_bg_centralizer_grp_image f == idmap.
 Proof.
   intros [h ch]; strip_truncations.
   apply path_sigma_hprop; unfold ".1".
   (* The goal is secretly of the form "bloop^-1 foo = h". *)
   apply (moveR_equiv_V (f:=bloop)).
-  Time napply ClassifyingSpace_rec2_beta_bloop1. (* Around 0.1s *)
+  Time napply ClassifyingSpace_rec2_beta_bloop1_bbase. (* Around 0.1s *)
 (* I tried unfolding things and filling in most arguments to ClassifyingSpace_rec2_beta_bloop1, but couldn't figure out a way to make it faster.  0.1s is not that bad, but I thought it would be easy to fix.  I'll leave my attempts here for now, but they can be deleted.
   unfold loops_map_bg_centralizer_grp_image.
   unfold map_bg_b_centralizer_grp_image.
@@ -310,6 +364,40 @@ Proof.
                 (h; tr ch)).
 *)
 Defined.
+
+Definition pi1_map_bg_centralizer_grp_image_centralizer_grp_image_pi1_map_bg
+  `{U : Univalence} {G H : Group} (f : G $-> H)
+  : pi1_map_bg_centralizer_grp_image f o centralizer_grp_image_pi1_map_bg f == idmap.
+Proof.
+  intro u.
+  strip_truncations.
+  change (pointed_fun (fmap B f) = (fmap B f)) in u.
+  unfold pi1_map_bg_centralizer_grp_image.
+  apply ap.
+  unfold loops_map_bg_centralizer_grp_image.
+  rewrite ClassifyingSpace_rec2_beta_bloop1'.
+  apply (equiv_inj ap10).
+  rewrite eisretr.
+  apply path_forall.
+  rapply ClassifyingSpace_ind_hprop.
+  cbn.
+  apply isequiv_bloop.
+Defined.
+
+Definition isequiv_centralizer_grp_image_pi1_map_bg `{U : Univalence}
+  {G H : Group} (f : G $-> H)
+  : IsEquiv (centralizer_grp_image_pi1_map_bg f).
+Proof.
+  srapply isequiv_adjointify.
+  - exact (pi1_map_bg_centralizer_grp_image f).
+  - exact (centralizer_grp_image_pi1_map_bg_pi1_map_bg_centralizer_grp_image f).
+  - exact (pi1_map_bg_centralizer_grp_image_centralizer_grp_image_pi1_map_bg f).
+Defined.
+
+Definition equiv_pi1_map_bg_centralizer_grp_image `{U : Univalence}
+  {G H : Group} (f : G $-> H)
+  : Pi 1 [B G -> B H, fmap B f] <~> subtype_centralizer_subgroup (grp_image f)
+  := Build_Equiv _ _ _ (isequiv_centralizer_grp_image_pi1_map_bg f).
 
 (** ** Products of classifying spaces *)
 

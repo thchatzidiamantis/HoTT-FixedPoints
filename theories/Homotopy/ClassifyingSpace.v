@@ -87,6 +87,8 @@ End ClassifyingSpace.
 (** Other eliminators *)
 Section Eliminators.
 
+  Local Open Scope dpath_scope.
+
   Context {G : Group}.
 
   (** The non-dependent eliminator *)
@@ -138,11 +140,67 @@ Section Eliminators.
     intros; rapply dp_ishprop.
   Defined.
 
+  (** To eliminate into a Pi-type [forall x, P x], you might expect to need [Funext] twice, once to show that the Pi-type is 1-truncated, and once to provide the path [bbase' = bbase'].  But by using the usual intro-revert trick, one can completely avoid [Funext].  This computes definitionally on [bbase]: [ClassifyingSpace_rec_forall P bbase' bloop' bloop_pp' bbase = bbase']. *)
+  Definition ClassifyingSpace_rec_forall
+    {X : Type} (P : X -> Type) `{forall x, IsTrunc 1 (P x)}
+    (bbase' : forall x, P x)
+    (bloop' : G -> bbase' == bbase')
+    (bloop_pp' : forall x : X, forall g h : G, bloop' (g * h) x = bloop' g x @ bloop' h x)
+    : ClassifyingSpace G -> (forall x, P x).
+  Proof.
+    intros bg x; revert bg.
+    exact (ClassifyingSpace_rec (P x) (bbase' x) (fun g => bloop' g x) (bloop_pp' x)).
+  Defined.
+
+  (** To give a homotopy between two functions defined using induction we need to provide [p] and [bloop_comm] below; note that [bloop1_pp] and [bloop2_pp] are not involved. *)
+  Definition ClassifyingSpace_ind_homotopy
+    (P : ClassifyingSpace G -> Type) `{forall b, IsTrunc 1 (P b)}
+    (bbase1 : P bbase) (bloop1 : forall x, DPath P (bloop x) bbase1 bbase1)
+    (bloop1_pp : forall x y,  DPathSquare P (sq_G1 (bloop_pp x y))
+      (bloop1 (x * y)) ((bloop1 x) @Dp (bloop1 y)) 1 1)
+    (bbase2 : P bbase) (bloop2 : forall x, DPath P (bloop x) bbase2 bbase2)
+    (bloop2_pp : forall x y,  DPathSquare P (sq_G1 (bloop_pp x y))
+      (bloop2 (x * y)) ((bloop2 x) @Dp (bloop2 y)) 1 1)
+    (p : bbase1 = bbase2)
+    (bloop_comm : forall g, bloop1 g @ p = ap (transport P (bloop g)) p @ bloop2 g)
+    : ClassifyingSpace_ind P bbase1 bloop1 bloop1_pp
+      == ClassifyingSpace_ind P bbase2 bloop2 bloop2_pp.
+  Proof.
+    srapply ClassifyingSpace_ind_hset; cbn beta.
+    - exact p.
+    - intro g.
+      unfold DPath.
+      transport_paths transport_paths_FlFr_D.
+      rewrite 2 ClassifyingSpace_ind_beta_bloop.
+      apply bloop_comm.
+  Defined.
+
+  (** And here is the same result for functions defined using the recursion principle. *)
+  Definition ClassifyingSpace_rec_homotopy
+    (P : Type) `{IsTrunc 1 P}
+    (bbase1 : P) (bloop1 : G -> bbase1 = bbase1)
+    (bloop1_pp : forall x y : G, bloop1 (x * y) = bloop1 x @ bloop1 y)
+    (bbase2 : P) (bloop2 : G -> bbase2 = bbase2)
+    (bloop2_pp : forall x y : G, bloop2 (x * y) = bloop2 x @ bloop2 y)
+    (p : bbase1 = bbase2)
+    (bloop_comm : forall g, p @ bloop2 g = bloop1 g @ p)
+    : ClassifyingSpace_rec P bbase1 bloop1 bloop1_pp
+      == ClassifyingSpace_rec P bbase2 bloop2 bloop2_pp.
+  Proof.
+    (* It's just as easy to prove this directly as it is to use the dependent version. *)
+    srapply ClassifyingSpace_ind_hset; cbn beta.
+    - exact p.
+    - intro g.
+      transport_paths FlFr.
+      rewrite 2 ClassifyingSpace_rec_beta_bloop.
+      symmetry; apply bloop_comm.
+  Defined.
+
 End Eliminators.
 
 (** We close the section, so we can use the above eliminators for different groups. *)
 
-(** A two-variable version of the non-dependent eliminator.  We could also have a dependent version, but since it is harder to state, we'll omit it for now. *)
+(** A two-variable version of the non-dependent eliminator.  We could also have a dependent version, but since it is harder to state, we'll omit it for now. This definitionally computes to the expected recursors *as functions* when either variable is fixed to [bbase]: [ClassifyingSpace_rec2 P bbase' bloop1 bloop1_pp bloop2 bloop2_pp bloop_comm bbase = ClassifyingSpace_rec P bbase' bloop2 bloop2_pp] and [(fun bg => ClassifyingSpace_rec2 P bbase' bloop1 bloop1_pp bloop2 bloop2_pp bloop_comm bg bbase) = ClassifyingSpace_rec P bbase' bloop1 bloop1_pp]. *)
 Definition ClassifyingSpace_rec2 {G H : Group}
   (P : Type) `{IsTrunc 1 P} (bbase' : P)
   (bloop1 : G -> bbase' = bbase')
@@ -152,22 +210,15 @@ Definition ClassifyingSpace_rec2 {G H : Group}
   (bloop_comm : forall g h, bloop1 g @ bloop2 h = bloop2 h @ bloop1 g)
   : ClassifyingSpace G -> ClassifyingSpace H -> P.
 Proof.
-  pose (f1 := ClassifyingSpace_rec P bbase' bloop1 bloop1_pp).
-  intro bg.
-  srapply ClassifyingSpace_rec.
-  - exact (f1 bg).
-  - intro h.
-    revert bg; srapply ClassifyingSpace_ind_hset; cbn.
-    1: exact (bloop2 h).
-    intro g.
-    transport_paths (transport_paths_FlFr (f:=f1) (g:=f1) (bloop g) _).
-    rewrite ClassifyingSpace_rec_beta_bloop.
-    apply bloop_comm.
-  - cbn beta zeta.
-    intros x y.
-    revert bg; srapply ClassifyingSpace_ind_hprop.
-    cbn.
-    apply bloop2_pp.
+  srapply ClassifyingSpace_rec_forall.
+  - exact (ClassifyingSpace_rec P bbase' bloop2 bloop2_pp).
+  - intro g.
+    snapply ClassifyingSpace_rec_homotopy.
+    + exact (bloop1 g).
+    + exact (bloop_comm g).
+  - intros x g h; revert x.
+    srapply ClassifyingSpace_ind_hprop; simpl.
+    apply bloop1_pp.
 Defined.
 
 (** The classifying space is 0-connected. *)
@@ -609,12 +660,8 @@ Section HSpace_bg.
     := fmap_id B G.
 
   Definition bg_mul_left_id
-    : forall b : B G, bg_mul bbase b = b.
-  Proof.
-    intro b.
-    lhs napply bg_mul_symm.
-    apply bg_mul_right_id.
-  Defined.
+    : forall b : B G, bg_mul bbase b = b
+    := fmap_id B G.
 
   #[export] Instance ishspace_bg : IsHSpace (B G)
     := Build_IsHSpace _

@@ -165,25 +165,28 @@ Definition equiv_groupreps_pi0_map_bg `{U : Univalence} (G H : Group)
 
 (** ** The fundamental group of [B G -> B H] *)
 
-Definition ClassifyingSpace_rec2_helper {G H : Group}
+(* jdc: Note that [bloop1_pp] was unused, so I dropped it. *)
+(* jdc: Also, [G] was not needed either, so I removed it and renamed the arguments. *)
+(* jdc: Then I realized that this can be generalized to give a homotopy beween two functions, which gives a more natural statement. I have put this in the main ClassifyingSpace.v file as [ClassifyingSpace_rec_homotopy].  The [p] and [bloop_comm] there are exactly what you'd expect to give a path between the sigma type of the first two arguments (except that you give a homotopy);  the third "_pp" argument is in a proposition so doesn't need to be compared.  Compare this to results containing the string "_homotop" in Colimits/*, for example, where some slightly different design choices are made. So maybe we should drop the _rec_loop version below?  Or keep it, but with a one-liner proof? *)
+(* jdc: With the further changes I made below, the _beta_bloop1 and _beta_bloop1' results aren't needed, and therefore _rec_loop is not needed either.  So not sure whether they are worth keeping around. *)
+Definition ClassifyingSpace_rec_loop {G : Group}
   (P : Type) `{IsTrunc 1 P} (bbase' : P)
-  (bloop1 : G -> bbase' = bbase')
-  (bloop1_pp : forall x y : G, bloop1 (x * y) = bloop1 x @ bloop1 y)
-  (bloop2 : H -> bbase' = bbase')
-  (bloop2_pp : forall x y : H, bloop2 (x * y) = bloop2 x @ bloop2 y)
-  (bloop_comm : forall g h, bloop1 g @ bloop2 h = bloop2 h @ bloop1 g)
-  (g : G) (x : B H)
-  : (ClassifyingSpace_rec P bbase' bloop2 bloop2_pp x)
-    = (ClassifyingSpace_rec P bbase' bloop2 bloop2_pp x).
+  (bloop' : G -> bbase' = bbase')
+  (bloop_pp' : forall x y : G, bloop' (x * y) = bloop' x @ bloop' y)
+  (p : bbase' = bbase')
+  (bloop_comm : forall h, p @ bloop' h = bloop' h @ p)
+  : ClassifyingSpace_rec P bbase' bloop' bloop_pp'
+    == ClassifyingSpace_rec P bbase' bloop' bloop_pp'.
 Proof.
-  revert x.
-  srapply ClassifyingSpace_ind_hset.
-  - exact (bloop1 g).
+  srapply ClassifyingSpace_ind_hset; cbn beta.
+  - exact p.
   - intro h.
-    rapply equiv_sq_dp^-1.
-    apply equiv_sq_path.
+    unfold DPath.
+    transport_paths FlFr.
     rewrite ClassifyingSpace_rec_beta_bloop.
-    rapply bloop_comm.
+    symmetry; apply bloop_comm.
+  Restart.
+  exact (ClassifyingSpace_rec_homotopy _ _ _ _ _ _ _ p bloop_comm).
 Defined.
 
 Definition ClassifyingSpace_rec2_beta_bloop1_bbase {G H : Group}
@@ -196,13 +199,14 @@ Definition ClassifyingSpace_rec2_beta_bloop1_bbase {G H : Group}
   (g : G)
   : ap10 (ap (ClassifyingSpace_rec2 P bbase' bloop1 bloop1_pp bloop2 bloop2_pp bloop_comm)
           (bloop g))
-      bbase = (bloop1 g).
+      bbase = bloop1 g.
 Proof.
   lhs_V napply ap_apply_Fl.
-  cbn.
+  unfold ClassifyingSpace_rec2, ClassifyingSpace_rec_forall; cbn.
   rapply ClassifyingSpace_rec_beta_bloop.
 Defined.
 
+(* jdc: Even though this is no longer needed, I wonder if it's still worth keeping?  Maybe just keep the conclusion in a comment, for future reference? *)
 Definition ClassifyingSpace_rec2_beta_bloop1 {G H : Group}
   (P : Type) `{IsTrunc 1 P} (bbase' : P)
   (bloop1 : G -> bbase' = bbase')
@@ -210,12 +214,11 @@ Definition ClassifyingSpace_rec2_beta_bloop1 {G H : Group}
   (bloop2 : H -> bbase' = bbase')
   (bloop2_pp : forall x y : H, bloop2 (x * y) = bloop2 x @ bloop2 y)
   (bloop_comm : forall g h, bloop1 g @ bloop2 h = bloop2 h @ bloop1 g)
-  (g : G) (x : B H)
+  (g : G)
   : ap10 (ap (ClassifyingSpace_rec2 P bbase' bloop1 bloop1_pp bloop2 bloop2_pp bloop_comm)
-          (bloop g)) x
-    = (ClassifyingSpace_rec2_helper P bbase' bloop1 bloop1_pp bloop2 bloop2_pp bloop_comm g x).
+          (bloop g))
+    == ClassifyingSpace_rec_loop P bbase' bloop2 bloop2_pp (bloop1 g) (bloop_comm g).
 Proof.
-  revert x.
   rapply ClassifyingSpace_ind_hprop.
   napply ClassifyingSpace_rec2_beta_bloop1_bbase.
 Defined.
@@ -231,13 +234,10 @@ Definition ClassifyingSpace_rec2_beta_bloop1' `{F : Funext} {G H : Group}
   : ap (ClassifyingSpace_rec2 P bbase' bloop1 bloop1_pp bloop2 bloop2_pp bloop_comm)
       (bloop g)
     = path_forall _ _
-        (ClassifyingSpace_rec2_helper P bbase' bloop1 bloop1_pp bloop2 bloop2_pp bloop_comm g).
+        (ClassifyingSpace_rec_loop P bbase' bloop2 bloop2_pp (bloop1 g) (bloop_comm g)).
 Proof.
-  apply (equiv_inj ap10).
-  rewrite eisretr.
-  apply path_forall.
-  intro x.
-  napply ClassifyingSpace_rec2_beta_bloop1.
+  apply (moveL_equiv_V (f:=ap10)).
+  apply path_forall, ClassifyingSpace_rec2_beta_bloop1.
 Defined.
 
 Definition map_bg_b_centralizer_grp_image {G H : Group} (f : G $-> H)
@@ -375,13 +375,12 @@ Proof.
   unfold pi1_map_bg_centralizer_grp_image.
   apply ap.
   unfold loops_map_bg_centralizer_grp_image.
-  rewrite ClassifyingSpace_rec2_beta_bloop1'.
   apply (equiv_inj ap10).
-  rewrite eisretr.
   apply path_forall.
   rapply ClassifyingSpace_ind_hprop.
-  cbn.
-  apply isequiv_bloop.
+  lhs napply ClassifyingSpace_rec2_beta_bloop1_bbase.
+  cbn -[isequiv_bloop].
+  apply eisretr.
 Defined.
 
 Definition isequiv_centralizer_grp_image_pi1_map_bg `{U : Univalence}

@@ -41,7 +41,12 @@ Definition HasMereIndexedFixedPoints (X A : Type)
 Definition HasIndexedFixedPoints (X A : Type)
   := forall (C : X -> A -> A), HasFamilyFixedPoints C.
 
-Definition hasfixedpoints_hasfullindexedfixedpoints_ptype {X : pType} {A : Type}
+Definition hasindexedfixedpoints_hasfixedpoints {X A : Type}
+  (fp_A : HasFixedPoints A)
+  : HasIndexedFixedPoints X A
+  := fun C x => (fp_A (C x)).
+
+Definition hasfixedpoints_hasindexedfixedpoints_ptype {X : pType} {A : Type}
   (ifp : HasIndexedFixedPoints X A)
   : HasFixedPoints A
   := fun f => ifp (fun _ => f) (point X).
@@ -52,7 +57,7 @@ Definition test1 {X A : Type} (mX : merely X)
 Proof.
   strip_truncations.
   apply tr.
-  unshelve refine (hasfixedpoints_hasfullindexedfixedpoints_ptype _).
+  unshelve refine (hasfixedpoints_hasindexedfixedpoints_ptype _).
   - snapply Build_pType.
     + exact X.
     + exact mX.
@@ -118,6 +123,42 @@ Proof.
   intro F.
   destruct (F negb) as [a pa]; induction a.
   1,2: by apply false_ne_true.
+Defined.
+
+Definition contr_hasfixedpoints_left_inv_hspace {A : pType} `{IsHSpace A}
+  (linv : forall (a : A), IsEquiv (a *.))
+  (fp : HasFixedPoints A)
+  : Contr A.
+Proof.
+  srapply (Build_Contr A (point A)).
+  intro y.
+  destruct (hasindexedfixedpoints_hasfixedpoints fp (fun x => (.* x)) y) as [a pa].
+  apply (ap (a *.)^-1) in pa.
+  rewrite eissect in pa.
+  rhs exact pa.
+  rapply (equiv_inj (a *.)).
+  rhs rapply eisretr.
+  exact (hspace_right_identity _).
+Defined.
+
+Definition contr_hasfixedpoints_right_inv_hspace {A : pType} `{IsHSpace A}
+  (rinv : forall (a : A), IsEquiv (.* a))
+  (fp : HasFixedPoints A)
+  : Contr A.
+Proof.
+  srapply (Build_Contr A (point A)).
+  intro y.
+  destruct (hasindexedfixedpoints_hasfixedpoints fp (fun x => (x *.)) y) as [a pa].
+  apply (ap (.* a)^-1) in pa.
+  change ((fun y0 : A => y0 * a)^-1 (y * a))
+        with ((fun y0 : A => y0 * a)^-1 ((.* a) y)) in pa.
+  rewrite eissect in pa.
+  rhs exact pa.
+  rapply (equiv_inj (.* a)).
+  change ((fun y0 : A => y0 * a)^-1 a * a)
+        with ((.* a) ((fun y0 : A => y0 * a)^-1 a)).
+  rhs rapply eisretr.
+  exact (hspace_left_identity _).
 Defined.
 
 (** ** Retracts *)
@@ -209,8 +250,8 @@ Definition hasfixedpoints_hasfixedpoints_prod {A B : Type}
   (fp_AB : HasFixedPoints (A * B))
   : HasFixedPoints A.
 Proof.
-  refine (hasfixedpoints_retract (f:=fst) (g:=fun x => (x, snd (fp_AB idmap).1)) _ fp_AB).
-  by cbn.
+  by rapply (hasfixedpoints_retract
+              (f:=fst) (g:=fun x => (x, snd (fp_AB idmap).1)) _ fp_AB).
 Defined.
 
 (* Can I also reproduce this as an instance of retracts? *)

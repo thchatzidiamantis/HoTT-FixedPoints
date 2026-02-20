@@ -143,31 +143,31 @@ End Eliminators.
 (** We close the section, so we can use the above eliminators for different groups. *)
 
 (** A two-variable version of the non-dependent eliminator.  We could also have a dependent version, but since it is harder to state, we'll omit it for now. *)
-  Definition ClassifyingSpace_rec2 {G H : Group}
-    (P : Type) `{IsTrunc 1 P} (bbase' : P)
-    (bloop1 : G -> bbase' = bbase')
-    (bloop1_pp : forall x y : G, bloop1 (x * y) = bloop1 x @ bloop1 y)
-    (bloop2 : H -> bbase' = bbase')
-    (bloop2_pp : forall x y : H, bloop2 (x * y) = bloop2 x @ bloop2 y)
-    (bloop_comm : forall g h, bloop1 g @ bloop2 h = bloop2 h @ bloop1 g)
-    : ClassifyingSpace G -> ClassifyingSpace H -> P.
-  Proof.
-    pose (f1 := ClassifyingSpace_rec P bbase' bloop1 bloop1_pp).
-    intro bg.
-    srapply ClassifyingSpace_rec.
-    - exact (f1 bg).
-    - intro h.
-      revert bg; srapply ClassifyingSpace_ind_hset; cbn.
-      1: exact (bloop2 h).
-      intro g.
-      transport_paths (transport_paths_FlFr (f:=f1) (g:=f1) (bloop g) _).
-      rewrite ClassifyingSpace_rec_beta_bloop.
-      apply bloop_comm.
-    - cbn beta zeta.
-      intros x y.
-      revert bg; srapply ClassifyingSpace_ind_hprop.
-      cbn.
-      apply bloop2_pp.
+Definition ClassifyingSpace_rec2 {G H : Group}
+  (P : Type) `{IsTrunc 1 P} (bbase' : P)
+  (bloop1 : G -> bbase' = bbase')
+  (bloop1_pp : forall x y : G, bloop1 (x * y) = bloop1 x @ bloop1 y)
+  (bloop2 : H -> bbase' = bbase')
+  (bloop2_pp : forall x y : H, bloop2 (x * y) = bloop2 x @ bloop2 y)
+  (bloop_comm : forall g h, bloop1 g @ bloop2 h = bloop2 h @ bloop1 g)
+  : ClassifyingSpace G -> ClassifyingSpace H -> P.
+Proof.
+  pose (f1 := ClassifyingSpace_rec P bbase' bloop1 bloop1_pp).
+  intro bg.
+  srapply ClassifyingSpace_rec.
+  - exact (f1 bg).
+  - intro h.
+    revert bg; srapply ClassifyingSpace_ind_hset; cbn.
+    1: exact (bloop2 h).
+    intro g.
+    transport_paths (transport_paths_FlFr (f:=f1) (g:=f1) (bloop g) _).
+    rewrite ClassifyingSpace_rec_beta_bloop.
+    apply bloop_comm.
+  - cbn beta zeta.
+    intros x y.
+    revert bg; srapply ClassifyingSpace_ind_hprop.
+    cbn.
+    apply bloop2_pp.
 Defined.
 
 (** The classifying space is 0-connected. *)

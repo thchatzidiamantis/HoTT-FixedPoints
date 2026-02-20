@@ -188,7 +188,7 @@ Definition iscohhspace_hspace' (A : pType)
 Proof.
   snapply Build_IsCohHSpace.
   { napply ishspace_homogeneous.
-    exact ishomogeneous_hspace. }
+    exact ishomogeneous_hspace_linv. }
   exact iscoherent_homogeneous.
 Defined.
 

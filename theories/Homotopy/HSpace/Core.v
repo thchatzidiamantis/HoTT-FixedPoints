@@ -59,6 +59,11 @@ Definition pequiv_hspace_left_op {X : pType} `{IsHSpace X}
   (x : X) `{IsEquiv _ _ (x *.)} : X <~>* [X,x]
   := Build_pEquiv' (equiv_hspace_left_op x) (right_identity x).
 
+(** The analogous result for right-invertible H-spaces. *)
+Definition pequiv_hspace_right_op {X : pType} `{IsHSpace X}
+  (x : X) `{IsEquiv _ _ (.* x)} : X <~>* [X,x]
+  := Build_pEquiv' (equiv_hspace_right_op x) (left_identity x).
+
 (** ** Connected H-spaces *)
 
 (** For connected H-spaces, left and right multiplication by an element is an equivalence. This is because left and right multiplication by the base point is one, and being an equivalence is a proposition. *)
@@ -77,7 +82,7 @@ Proof.
   napply conn_point_elim; exact _.
 Defined.
 
-(** ** Left-invertible H-spaces are homogeneous *)
+(** ** Being a left- or right-invertible H-spaces is logically equivalent to being homogeneous *)
 
 (** A homogeneous structure on a pointed type [A] gives, for any point [a : A], a self-equivalence of [A] sending the base point to [a]. (This is the same data as a left-invertible right-unital binary operation.) *)
 Class IsHomogeneous (A : pType)
@@ -109,10 +114,15 @@ Proof.
 Defined.
 
 (** Left-invertible H-spaces are homogeneous, giving a logical equivalence between left-invertible H-spaces and homogeneous types. (In fact, the type of homogeneous types with the base point sent to the pointed identity map is equivalent to the type of left-invertible coherent H-spaces, but we don't prove that here.) See [equiv_iscohhspace_ptd_action] for a closely related result. *)
-Instance ishomogeneous_hspace {A : pType} `{IsHSpace A}
+Instance ishomogeneous_hspace_linv {A : pType} `{IsHSpace A}
   `{forall a, IsEquiv (a *.)}
   : IsHomogeneous A
   := (fun a => pequiv_hspace_left_op a).
+
+Instance ishomogeneous_hspace_rinv {A : pType} `{IsHSpace A}
+  `{forall a, IsEquiv (.* a)}
+  : IsHomogeneous A
+  := (fun a => pequiv_hspace_right_op a).
 
 (** ** Promoting unpointed homotopies to pointed homotopies *)
 

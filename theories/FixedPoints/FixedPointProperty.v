@@ -5,7 +5,7 @@ Require Import Circle.
 Require Import Suspension.
 Require Import Truncations.Core Truncations.Connectedness Truncations.Constant.
 (* Results from Truncations.Constant might be useful as this progresses. *)
-Require Import HSpace.Core.
+Require Import HSpace.Core Pointed.Core.
 Require Import Colimits.Quotient.
 Require Import Cubical.DPath PathSquare.
 Require Export Classes.interfaces.canonical_names (SgOp, sg_op,
@@ -125,20 +125,29 @@ Proof.
   1,2: by apply false_ne_true.
 Defined.
 
-Definition contr_hasfixedpoints_left_inv_hspace {A : pType} `{IsHSpace A}
-  (linv : forall (a : A), IsEquiv (a *.))
+(** A homogeneous space with the fixed-point property must be contractible.  Since every left- or right-invertible H-space is homogeneous, this covers those situations as well. *)
+Definition contr_hasfixedpoints_homogeneous {A : pType} `{IsHomogeneous A}
   (fp : HasFixedPoints A)
   : Contr A.
 Proof.
   srapply (Build_Contr A (point A)).
   intro y.
-  destruct (hasindexedfixedpoints_hasfixedpoints fp (fun x => (.* x)) y) as [a pa].
-  apply (ap (a *.)^-1) in pa.
-  rewrite eissect in pa.
-  rhs exact pa.
-  rapply (equiv_inj (a *.)).
-  rhs rapply eisretr.
-  exact (hspace_right_identity _).
+  destruct (fp (fun z => ishomogeneous z y)) as [a pa].
+  (* [ishomogeneous a] is a self-equivalence sending [pt] to [a]. *)
+  apply (equiv_inj (ishomogeneous a)).
+  rhs apply pa.
+  apply (dpoint_eq (ishomogeneous a)).
+Defined.
+
+(** We shouldn't need to state either of the next two results explicitly, but due to the issue mentioned below with typeclass search, we have to do so. *)
+Definition contr_hasfixedpoints_left_inv_hspace {A : pType} `{IsHSpace A}
+  (linv : forall (a : A), IsEquiv (a *.))
+  (fp : HasFixedPoints A)
+  : Contr A.
+Proof.
+  rapply (contr_hasfixedpoints_homogeneous fp).
+  (* For some reason, [linv] isn't found during typeclass search in the previous line, so we need the next line, which *does* find [linv] during typeclass search! *)
+  rapply ishomogeneous_hspace_linv.
 Defined.
 
 Definition contr_hasfixedpoints_right_inv_hspace {A : pType} `{IsHSpace A}
@@ -146,19 +155,8 @@ Definition contr_hasfixedpoints_right_inv_hspace {A : pType} `{IsHSpace A}
   (fp : HasFixedPoints A)
   : Contr A.
 Proof.
-  srapply (Build_Contr A (point A)).
-  intro y.
-  destruct (hasindexedfixedpoints_hasfixedpoints fp (fun x => (x *.)) y) as [a pa].
-  apply (ap (.* a)^-1) in pa.
-  change ((fun y0 : A => y0 * a)^-1 (y * a))
-        with ((fun y0 : A => y0 * a)^-1 ((.* a) y)) in pa.
-  rewrite eissect in pa.
-  rhs exact pa.
-  rapply (equiv_inj (.* a)).
-  change ((fun y0 : A => y0 * a)^-1 a * a)
-        with ((.* a) ((fun y0 : A => y0 * a)^-1 a)).
-  rhs rapply eisretr.
-  exact (hspace_left_identity _).
+  rapply (contr_hasfixedpoints_homogeneous fp).
+  rapply ishomogeneous_hspace_rinv.
 Defined.
 
 (** ** Retracts *)

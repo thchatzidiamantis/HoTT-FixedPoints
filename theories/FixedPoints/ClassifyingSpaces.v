@@ -165,11 +165,6 @@ Definition equiv_groupreps_pi0_map_bg `{U : Univalence} (G H : Group)
 
 (** ** The fundamental group of [B G -> B H] *)
 
-(* jdc: Note that [bloop1_pp] was unused, so I dropped it. *)
-(* jdc: Also, [G] was not needed either, so I removed it and renamed the arguments. *)
-(* jdc: Then I realized that this can be generalized to give a homotopy beween two functions, which gives a more natural statement. I have put this in the main ClassifyingSpace.v file as [ClassifyingSpace_rec_homotopy].  The [p] and [bloop_comm] there are exactly what you'd expect to give a path between the sigma type of the first two arguments (except that you give a homotopy);  the third "_pp" argument is in a proposition so doesn't need to be compared.  Compare this to results containing the string "_homotop" in Colimits/*, for example, where some slightly different design choices are made. So maybe we should drop the _rec_loop version below?  Or keep it, but with a one-liner proof? *)
-(* jdc: With the further changes I made below, the _beta_bloop1 and _beta_bloop1' results aren't needed, and therefore _rec_loop is not needed either.  So not sure whether they are worth keeping around. *)
-(* tcc: Replacing it with the one-liner proof seems good to me, it still computes nicely. I don't know if these will be useful if I try to write a [ClassifyingSpace_ind2] and its computation rules. *)
 Definition ClassifyingSpace_rec_loop {G : Group}
   (P : Type) `{IsTrunc 1 P} (bbase' : P)
   (bloop' : G -> bbase' = bbase')
@@ -177,18 +172,8 @@ Definition ClassifyingSpace_rec_loop {G : Group}
   (p : bbase' = bbase')
   (bloop_comm : forall h, p @ bloop' h = bloop' h @ p)
   : ClassifyingSpace_rec P bbase' bloop' bloop_pp'
-    == ClassifyingSpace_rec P bbase' bloop' bloop_pp'.
-Proof.
-  srapply ClassifyingSpace_ind_hset; cbn beta.
-  - exact p.
-  - intro h.
-    unfold DPath.
-    transport_paths FlFr.
-    rewrite ClassifyingSpace_rec_beta_bloop.
-    symmetry; apply bloop_comm.
-  Restart.
-  exact (ClassifyingSpace_rec_homotopy _ _ _ _ _ _ _ p bloop_comm).
-Defined.
+    == ClassifyingSpace_rec P bbase' bloop' bloop_pp'
+  := ClassifyingSpace_rec_homotopy _ _ _ _ _ _ _ p bloop_comm.
 
 Definition ClassifyingSpace_rec2_beta_bloop1_bbase {G H : Group}
   (P : Type) `{IsTrunc 1 P} (bbase' : P)
@@ -207,8 +192,6 @@ Proof.
   rapply ClassifyingSpace_rec_beta_bloop.
 Defined.
 
-(* jdc: Even though this is no longer needed, I wonder if it's still worth keeping?  Maybe just keep the conclusion in a comment, for future reference? *)
-(* tcc: I think it's worth keeping _beta_bloop1, I don't like _beta_bloop1' since it is basically the same thing but uses funext. *)
 Definition ClassifyingSpace_rec2_beta_bloop1 {G H : Group}
   (P : Type) `{IsTrunc 1 P} (bbase' : P)
   (bloop1 : G -> bbase' = bbase')
@@ -223,23 +206,6 @@ Definition ClassifyingSpace_rec2_beta_bloop1 {G H : Group}
 Proof.
   rapply ClassifyingSpace_ind_hprop.
   napply ClassifyingSpace_rec2_beta_bloop1_bbase.
-Defined.
-
-Definition ClassifyingSpace_rec2_beta_bloop1' `{F : Funext} {G H : Group}
-  (P : Type) `{IsTrunc 1 P} (bbase' : P)
-  (bloop1 : G -> bbase' = bbase')
-  (bloop1_pp : forall x y : G, bloop1 (x * y) = bloop1 x @ bloop1 y)
-  (bloop2 : H -> bbase' = bbase')
-  (bloop2_pp : forall x y : H, bloop2 (x * y) = bloop2 x @ bloop2 y)
-  (bloop_comm : forall g h, bloop1 g @ bloop2 h = bloop2 h @ bloop1 g)
-  (g : G)
-  : ap (ClassifyingSpace_rec2 P bbase' bloop1 bloop1_pp bloop2 bloop2_pp bloop_comm)
-      (bloop g)
-    = path_forall _ _
-        (ClassifyingSpace_rec_loop P bbase' bloop2 bloop2_pp (bloop1 g) (bloop_comm g)).
-Proof.
-  apply (moveL_equiv_V (f:=ap10)).
-  apply path_forall, ClassifyingSpace_rec2_beta_bloop1.
 Defined.
 
 Definition map_bg_b_centralizer_grp_image {G H : Group} (f : G $-> H)
@@ -261,13 +227,6 @@ Definition pi1_map_bg_centralizer_grp_image {G H : Group} (f : G $-> H)
   : subtype_centralizer_subgroup (grp_image f)
       -> Pi 1 [B G -> B H, fmap B f]
   := tr o (loops_map_bg_centralizer_grp_image f).
-
-(* tcc: I had some weird formatting here before, but it was copied from [ap11_is_ap10_ap01] in PathGroupoids.v, which is probably where this should be added. *)
-Definition ap11_is_ap01_ap10 {A B} {f g : A -> B} (h : g = f) {x y : A} (p : x = y)
-  : ap11 h p = ap g p @ ap10 h y.
-Proof.
-  by path_induction.
-Defined.
 
 Definition centralizer_grp_image_pi1_map_bg `{U : Univalence}
   {G H : Group} (f : G $-> H)

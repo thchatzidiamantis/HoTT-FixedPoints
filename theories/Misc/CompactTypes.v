@@ -187,7 +187,7 @@ Defined.
 Definition inhabited_issearchable {A : Type} : IsSearchable A -> A
   := fun s => (s (fun a => Unit) _).1.
 
-Definition searchable_iff {A : Type} : IsSearchable A <-> A * (IsCompact A)
+Definition issearchable_iff {A : Type} : IsSearchable A <-> A * (IsCompact A)
   := (fun s => (inhabited_issearchable s, iscompact_issearchable s),
         fun c => issearchable_iscompact_inhabited (snd c) (fst c)).
 

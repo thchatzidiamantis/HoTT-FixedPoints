@@ -146,4 +146,4 @@ Definition sigmacompact_strictlyfinite {A : Type} `{StrictlyFinite A}
 Proof.
   srapply (sigmacompact_retract (eissect equiv_fin)).
   exact sigmacompact_fin.
-Proof.
+Defined.

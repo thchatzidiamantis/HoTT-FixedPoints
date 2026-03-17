@@ -1,12 +1,8 @@
 (** * Group-theoretic requirements for the fixed points project *)
 
 From HoTT Require Import Basics Types.
-Require Import Circle.
-Require Import Suspension.
 Require Import Truncations.Core Truncations.Connectedness Truncations.Constant.
 (* Results from Truncations.Constant might be useful as this progresses. *)
-Require Import HSpace.Core.
-Require Import Homotopy.ClassifyingSpace.
 Require Import Algebra.Groups.Group Subgroup Algebra.AbGroups.Centralizer.
 Require Import Colimits.Quotient.
 Require Import Pointed WildCat WildCat.Core.
@@ -51,28 +47,18 @@ Definition subtype_centralizer_subgroup
   {G : Group} (H : G -> Type)
   := Build_Subgroup G (subtype_centralizer H) _.
 
-(* remove this later *)
-Definition b_subtype_centralizer {G : Group} (H : G -> Type)
-  : Type.
-Proof.
-  apply ClassifyingSpace.
-  apply (subgroup_group (G:=G)).
-  exists (subtype_centralizer H); exact _.
-Defined.
-
-Definition grp_hom_centralizer_image_grp_hom
-  {G H : Group} (f : G $-> H)
+Definition grp_hom_centralizer_image_grp_hom {G H : Group} (f : G $-> H)
   : grp_prod (subtype_centralizer_subgroup (grp_image f)) G
     $-> H.
 Proof.
   snapply Build_GroupHomomorphism.
-  1,2: intros [[x Cx] y].
+  1,2: intros [[x cx] y].
   - exact (x * f y).
-  - intros [[z Cz] w]; cbn.
+  - intros [[z cz] w]; cbn.
     strip_truncations.
     refine (grp_assoc _ (f y) (f w) @ _ # ap _ (grp_homo_op _ _ _)).
     lhs_V exact (ap (.* f w) (grp_assoc x z (f y))).
-    lhs_V exact (ap (fun r => x * r * (f w)) (Cz (f y) (tr (y; 1)))).
+    lhs_V exact (ap (fun r => x * r * (f w)) (cz (f y) (tr (y; 1)))).
     lhs exact (ap (.* f w) (grp_assoc x (f y) z)).
     exact (grp_assoc (x * (f y)) z (f w))^.
 Defined.

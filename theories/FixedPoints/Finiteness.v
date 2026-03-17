@@ -22,12 +22,16 @@ Local Open Scope path_scope.
 
 (** ** More on Compact Types *)
 
+(* jdc: the name should be "issigmacompact_unit", matching the spelling in the goal.  Same for many results below. *)
+(* jdc: maybe best to state this for contractible types?  And make it an Instance? *)
 Definition sigmacompact_unit : IsSigmaCompact Unit.
 Proof.
   intros P dP.
   rapply (decidable_equiv _ (equiv_contr_sigma _)^-1).
 Defined.
 
+(* jdc: should we just use issearchable_bool and the implications? *)
+(* jdc: should we decide on a linear order of the various implications between variants of compactness and make one direction of each an instance?  Probably lots in the CompactTypes file should be instances. *)
 Definition sigmacompact_bool : IsSigmaCompact Bool.
 Proof.
   intros P dP.
@@ -54,31 +58,31 @@ Proof.
   exact ((s r)^ # pr).
 Defined.
 
+Definition issigmacompact_equiv {A B : Type} (f : A -> B) `{!IsEquiv f}
+  (c : IsSigmaCompact B)
+  : IsSigmaCompact A
+  := sigmacompact_retract (eissect f) c.
+
 Definition sigmacompact_sigma {A : Type} {P : A -> Type}
   (cA : IsSigmaCompact A) (cP : forall (a : A), IsSigmaCompact (P a))
   : IsSigmaCompact (sig P).
 Proof.
   intros Q dQ.
-  pose (R := fun a => {x : P a & Q (a; x)}).
-  assert (dR : forall a, Decidable (R a)).
-  { intros; apply cP.
-    intros; apply dQ. }
-  destruct (cA R dR) as [u|v].
-  1: left; exact ((u.1; u.2.1); u.2.2).
-  right; intros x.
-  exact (v (x.1.1; (x.1.2; x.2))).
+  apply (decidable_equiv _ (equiv_sigma_assoc P Q)).
+  apply cA; intro a.
+  by apply cP; intro p.
 Defined.
 
 Definition sigmacompact_detachable_subset {A : Type} {P : A -> HProp}
   (cA : IsSigmaCompact A) (dP : forall (a : A), Decidable (P a))
   : IsSigmaCompact (sig P).
 Proof.
-  srapply (sigmacompact_sigma cA).
+  srapply (sigmacompact_sigma cA); cbn beta.
   intro a.
   destruct (equiv_decidable_hprop (P a)) as [e1|e2].
-  - rapply (sigmacompact_retract (eissect e1)).
+  - rapply (issigmacompact_equiv e1).
     exact sigmacompact_unit.
-  - rapply (sigmacompact_retract (eissect e2)).
+  - rapply (issigmacompact_equiv e2).
     exact (fun P dP => inr proj1).
 Defined.
 
@@ -120,8 +124,8 @@ Definition sigmacompact_sum {A B : Type}
   (cA : IsSigmaCompact A) (cB : IsSigmaCompact B)
   : IsSigmaCompact (A + B).
 Proof.
-  rapply (sigmacompact_retract (@eissect _ _ _ (isequiv_sig_of_sum A B))).
-  rapply sigmacompact_sigma.
+  apply (issigmacompact_equiv (sig_of_sum A B)).
+  apply sigmacompact_sigma.
   - exact sigmacompact_bool.
   - by destruct a.
 Defined.

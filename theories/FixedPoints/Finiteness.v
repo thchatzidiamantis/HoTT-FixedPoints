@@ -301,10 +301,19 @@ Proof.
     apply (strictlyfinite_equiv' _ (issig_GroupHomomorphism _ _)).
     apply strictlyfinite_detachable_subset.
     + exact _.
-  (* Set Typeclasses Debug. *)
-    + 
-    (* Timeout 5 exact _. *)
-    apply decidable_issemigrouppreserving.
+    + Set Typeclasses Debug.
+      Fail Timeout 1 exact _.
+      (* You introduced a typeclass search loop above, for hprops:
+
+         Goal:  Decidable foo (where foo is IsSemiGroupPreserving x).
+         Tries: decidable_finite_hprop.  Solves hprop part.
+         Goal:  Finite foo.
+         Tries: finite_strictlyfinite.
+         Goal:  StrictlyFinite foo.
+         Tries: strictly_finite_decidable_hprop.  Solves hprop part.
+         Goal:  Decidable foo.
+      *)
+      apply decidable_issemigrouppreserving.
       1: apply (ispicompact_issigmacompact (issigmacompact_strictlyfinite)).
       exact (decidablepaths_equiv _ (equiv_fin)^-1 _).
   - exact (decidablepaths_equiv _ (equiv_fin)^-1 _).

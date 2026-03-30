@@ -119,11 +119,11 @@ Proof.
   issig.
 Defined.
 
+(* jdc: if the implication was reversed, then you wouldn't need to invert e.  And it looks like most users of this lemma apply it to an inverted function. *)
 Definition strictlyfinite_equiv X {Y} (e : X -> Y) `{IsEquiv X Y e}
   : StrictlyFinite X -> StrictlyFinite Y
-  := fun _ => Build_StrictlyFinite Y fcard 
-                (equiv_compose' (Build_Equiv _ _ e _) equiv_fin^-1)^-1.
-
+  := fun _ => Build_StrictlyFinite Y fcard
+              (equiv_fin oE (Build_Equiv _ _ e _)^-1%equiv).
 
 Definition strictlyfinite_equiv' X {Y} (e : X <~> Y)
   : StrictlyFinite X -> StrictlyFinite Y
@@ -162,7 +162,6 @@ Lemma in_class_of_path `{Univalence}
   : forall x a, x = class_of R a -> in_class _ x a.
 Proof.
   intros x a p.
-  rewrite p.
   destruct p^.
   cbv; reflexivity.
 Defined.
@@ -183,28 +182,28 @@ Proof.
   refine (_ +E 1); assumption.
 Defined.
 
-Instance strictlyfinite_sum X Y `{StrictlyFinite X} `{StrictlyFinite Y}
-: StrictlyFinite (X + Y).
+Instance strictlyfinite_sum X Y `{StrictlyFinite X} {sfY : StrictlyFinite Y}
+  : StrictlyFinite (X + Y).
 Proof.
-  assert (e := @equiv_fin Y H0).
+  assert (e := @equiv_fin Y sfY).
   refine (strictlyfinite_equiv _ (functor_sum idmap e^-1) _).
-  generalize (@fcard Y H0); intros n.
+  generalize (@fcard Y sfY); intros n; clear Y sfY e.
   induction n as [|n IH].
   - exact (strictlyfinite_equiv _ (sum_empty_r X)^-1 _).
   - exact (strictlyfinite_equiv _ (equiv_sum_assoc X _ Unit) _).
 Defined.
 
 Instance strictlyfinite_sigma {X} (Y : X -> Type)
-       `{StrictlyFinite X} `{forall x, StrictlyFinite (Y x)}
-: StrictlyFinite { x:X & Y x }.
+       {sfX : StrictlyFinite X} `{forall x, StrictlyFinite (Y x)}
+  : StrictlyFinite { x:X & Y x }.
 Proof.
-  assert (e := @equiv_fin X H).
+  assert (e := @equiv_fin X sfX).
   rapply (strictlyfinite_equiv' _
             (equiv_functor_sigma (equiv_inverse e)
                                  (fun x (y:Y (e^-1 x)) => y))).
   set (Y' := fun x => Y (e^-1 x)).
-  assert (forall x, StrictlyFinite (Y' x)) by exact _; clearbody Y'; clear e.
-  generalize dependent (@fcard X H); intros n Y' ?.
+  assert (forall x, StrictlyFinite (Y' x)) by exact _; clearbody Y'; clear e Y H.
+  generalize dependent (@fcard X sfX); intros n Y' H; clear X sfX.
   induction n as [|n IH].
   - exact (strictlyfinite_equiv Empty pr1^-1 _).
   - refine (strictlyfinite_equiv _ (equiv_sigma_sum (Fin n) Unit Y')^-1 _).
@@ -213,15 +212,16 @@ Proof.
     + refine (strictlyfinite_equiv' _ (equiv_contr_sigma _)^-1 _).
 Defined.
 
+(* jdc: Since this is found by typeclass search, it might not be needed to make it an instance. *)
 Instance strictlyfinite_detachable_subset {X} `{StrictlyFinite X} (P : X -> Type)
        `{forall x, IsHProp (P x)} `{forall x, Decidable (P x)}
-: StrictlyFinite { x:X & P x }.
+  : StrictlyFinite { x:X & P x }.
 Proof.
   exact _.
 Defined.
 
 Instance strictlyfinite_prod X Y `{StrictlyFinite X} `{StrictlyFinite Y}
-: StrictlyFinite (X * Y).
+  : StrictlyFinite (X * Y).
 Proof.
   assert (e := @equiv_fin Y _).
   refine (strictlyfinite_equiv _ (functor_prod idmap e^-1) _).
@@ -272,7 +272,7 @@ Definition group_hom_groupreps `{ua : Univalence}
   : {f : G $-> H & in_class _ r f}.
 Proof.
   srapply (fst merely_inhabited_iff_inhabited_stable).
-  { rapply stable_decidable.
+  - rapply stable_decidable.
     (* tcc: [srapply] freezes the whole thing here. *)
     apply cGH. intro a.
     apply decidable_in_class.
@@ -281,12 +281,12 @@ Proof.
     apply decidable_trunc_decidable.
     apply cH; intro h.
     apply cG'; intro g.
-    apply dpH. }
-  { pose proof (l := @center _ (issurj_class_of _ r)).
+    apply dpH.
+  - pose proof (l := @center _ (issurj_class_of _ r)).
     strip_truncations; apply tr.
     exists l.1.
     srapply in_class_of_path.
-    exact l.2^. }
+    exact l.2^.
 Time Defined.
 
 Definition group_hom_groupreps_strictlyfinite `{ua : Univalence} {G H : Group}

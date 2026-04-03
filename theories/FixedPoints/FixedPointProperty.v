@@ -561,12 +561,39 @@ Proof.
     apply ap.
     rewrite fp_A.2^.
     unfold g, helper_function.
-    rewrite e.
-    reflexivity.
+    by rewrite e.
   - contradiction s.
     apply ap.
     rewrite fp_A.2^.
     unfold g, helper_function.
-    rewrite e.
-    reflexivity.
+    by rewrite e.
+Defined.
+
+Definition decpaths_helper_function {A : Type} (x y : A)
+  (dx : forall a : A, Decidable (x = a))
+  : A -> A.
+Proof.
+  intro a.
+  destruct (dx a) as [p|q].
+  - exact y.
+  - exact x.
+Defined.
+
+Definition contr_hasfixedpoints_decpaths {A : Type}
+  (fp : HasFixedPoints A) {x : A} (dx : forall a : A, Decidable (x = a))
+  : Contr A.
+Proof.
+  srapply Build_Contr.
+  1: exact x.
+  intros y.
+  destruct (fp (decpaths_helper_function x y dx)) as [a p].
+  remember (dx a) as d eqn:e.
+  destruct d as [r | s].
+  - lhs exact (r @ p^).
+    unfold decpaths_helper_function.
+    by rewrite e.
+  - contradiction s.
+    rhs_V exact p.
+    unfold decpaths_helper_function.
+    by rewrite e.
 Defined.

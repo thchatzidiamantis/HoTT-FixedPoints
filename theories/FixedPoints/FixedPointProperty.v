@@ -1,18 +1,23 @@
 (** * Types for which self-maps have fixed points *)
 
 From HoTT Require Import Basics Types.
+Require Import Algebra.Groups.Group Subgroup Algebra.AbGroups.Centralizer.
+Require Import Homotopy.ClassifyingSpace HomotopyGroup WhiteheadsPrinciple.
+Require Import FixedPoints.Groups ClassifyingSpaces.
+Require Import Pointed WildCat WildCat.Core.
 Require Import Circle.
 Require Import Suspension.
 Require Import Truncations.Core Truncations.Connectedness Truncations.Constant.
 (* Results from Truncations.Constant might be useful as this progresses. *)
 Require Import HSpace.Core Pointed.Core.
-Require Import Colimits.Quotient.
+Require Import Colimits.Pushout Quotient.
 Require Import Cubical.DPath PathSquare.
 Require Export Classes.interfaces.canonical_names (SgOp, sg_op,
     MonUnit, mon_unit, LeftIdentity, left_identity, RightIdentity, right_identity,
     Negate, negate, Associative, simple_associativity, associativity,
     LeftInverse, left_inverse, RightInverse, right_inverse, Commutative, commutativity).
 Export canonical_names.BinOpNotations.
+Export Homotopy.ClassifyingSpace.ClassifyingSpaceNotation.
 
 Local Open Scope pointed_scope.
 Local Open Scope trunc_scope.
@@ -158,6 +163,179 @@ Proof.
   rapply (contr_hasfixedpoints_homogeneous fp).
   rapply ishomogeneous_hspace_rinv.
 Defined.
+
+Definition connected_ptype_merely_const `{ua : Univalence}
+  (X : pType) `{IsConnected 0 X}
+  : X -> {f : X -> X & merely (f = (fun _ => pt))}.
+Proof.
+  intro x.
+  exists (fun _ => x).
+  pose proof (p := merely_path_is0connected X x pt).
+  strip_truncations; apply tr.
+  exact (ap (fun k => (fun _ => k)) p).
+Defined.
+
+Definition component_retr `{ua : Univalence}
+  {X : pType} `{IsConnected 0 X}
+  : (fun F => F.1 pt) o (connected_ptype_merely_const X) == idmap
+  := fun _ => idpath.
+
+Definition help0 `{ua : Univalence}
+  (X : pType) `{IsConnected 0 X}
+  : (hfiber (connected_ptype_merely_const X) (fun _ => pt; tr idpath))
+    <~> {x : X & (fun _ => x) = (fun _ : X => pt)}.
+Proof.
+  srapply equiv_functor_sigma_id.
+  intro x; symmetry.
+  exact (equiv_path_sigma_hprop (connected_ptype_merely_const X pt)
+                                (fun _ => pt; tr idpath)).
+Defined.
+
+Definition help1 `{ua : Univalence}
+  (X : pType) `{IsConnected 0 X}
+  : (hfiber (connected_ptype_merely_const X) (fun _ => pt; tr idpath))
+    <~> {x : X & X -> x = pt}.
+Proof.
+  refine (_ oE (help0 X)).
+  srapply (equiv_functor_sigma' equiv_idmap).
+  intro x; simpl.
+  symmetry; apply equiv_path_forall.
+Defined.
+
+Definition help2 `{ua : Univalence}
+  (X : pType) `{IsConnected 0 X}
+  : (hfiber (connected_ptype_merely_const X) (fun _ => pt; tr idpath))
+    <~> {u : {y : X & y = pt} & {h : X -> (u.1 = pt) & h pt = u.2}}.
+Proof.
+  refine (_ oE (help1 X)).
+  make_equiv_contr_basedpaths.
+Defined.
+
+Definition equiv_contr_sigma' {A : Type} (P : A -> Type) `{Contr A} (a : A)
+  : { x : A & P x } <~> P a
+  := equiv_transport _ (contr a) oE (equiv_contr_sigma P).
+
+Definition help3 `{ua : Univalence}
+  (X : pType) `{IsConnected 0 X}
+  : (hfiber (connected_ptype_merely_const X) (fun _ => pt; tr idpath))
+    <~> {h : X -> (point X = pt) & h pt = idpath}
+  := @equiv_contr_sigma' _ _ _ (pt; idpath) oE (help2 X).
+
+Definition help4 `{ua : Univalence}
+  (X : pType) `{IsConnected 0 X}
+  : (hfiber (connected_ptype_merely_const X) (fun _ => pt; tr idpath))
+    <~> (X ->* loops X).
+Proof.
+  refine (_ oE help3 X).
+  issig.
+Defined.
+
+Definition component_equiv `{ua : Univalence}
+  {X : pType} `{IsConnected 0 X} (c : Contr (X ->* loops X))
+  : IsEquiv (connected_ptype_merely_const  X).
+Proof.
+  apply isequiv_contr_map.
+  srapply (@conn_point_elim ua (-1) [_, (fun _ => pt; tr idpath)]).
+  apply (contr_equiv' _ (help4 X)^-1).
+Defined.
+
+Definition fixedby_comp_constant_contr_pfun_loops `{ua : Univalence}
+  {X : pType} `{IsConnected 0 X} (c : Contr (X ->* loops X)) {f : X -> X}
+  (p : merely (f = (fun _ => pt)))
+  : FixedBy f.
+Proof.
+  pose (e := Build_Equiv _ _ _ (component_equiv c)).
+  exists (e^-1 (f; p)).
+  exact (ap10 (eisretr e (f; p))..1^ (e^-1 (f; p))).
+Defined.
+
+Definition component_equiv_cor `{ua : Univalence}
+  {X : pType} `{IsConnected 0 X} (c : Contr (X ->* loops X)) {f : X -> X}
+  (p : merely (f = (fun _ => pt)))
+  : f == (fun _ => f pt).
+Proof.
+  pose (e := Build_Equiv _ _ _ (component_equiv c)).
+  pose proof (q := (eisretr e (f; p))..1^); simpl in q.
+  intro x.
+  exact (ap10 q x @ ap10 q^ pt).  
+Defined.
+
+Definition component_equiv' `{ua : Univalence}
+  {X : pType} `{IsConnected 0 X} (e : IsEquiv (connected_ptype_merely_const X))
+  : Contr (X ->* loops X).
+Proof.
+  apply contr_map_isequiv in e.
+  apply (contr_equiv' _ (help4 X)).
+Defined.
+
+Definition contr_trivial_pin {ua : Univalence} {A : pType}
+  (n : trunc_index) {H0 : IsTrunc n A}
+  (c : forall (x : A) (k : nat), Contr (Pi k [A, x]))
+  : Contr A.
+Proof.
+  srapply (contr_equiv Unit (B:=A) (fun _ => ispointed_type A)).
+  rapply (whiteheads_principle n).
+  - admit.
+  - rapply isequiv_contr_contr.
+    exact (c pt (0 : nat)).
+  - intros x k.
+    rapply isequiv_contr_contr.
+    + admit.
+    + exact (c pt (k.+1 : nat)).
+Admitted.
+
+Definition pi1helper {A : Type} (a b : A) (p : merely (a = b))
+  : merely (pointed_type (Pi 1 [A, a]) = Pi 1 [A, b]).
+Proof.
+  strip_truncations; apply tr.
+  by rewrite p.
+Defined.
+
+(* Note that we can prove that [f] is merely pointed since the goal is an HProp. *)
+Definition contr_pi1_merely_pointed_equiv_weird_group `{U : Univalence}
+  {G : Group} (f : B G -> B G) (v : G $<~> G) (mfv : merely (f = fmap B v))
+  (centr : forall u : G $-> G,
+            IsEquiv u -> Contr (subtype_centralizer_subgroup (grp_image u)))
+  : Contr (Pi 1 [B G -> B G, f]).
+Proof.
+  strip_truncations.
+  rewrite mfv.
+  rewrite (path_universe_uncurried (equiv_pi1_map_bg_centralizer_grp_image v)).
+  exact (centr v _).
+Defined.
+
+Definition contr_componenet_merely_pointed_equiv_weird_group `{U : Univalence}
+  {G : Group} (f : B G -> B G) (v : G $<~> G) (mfv : merely (f = fmap B v))
+  (centr : forall u : G $-> G,
+            IsEquiv u -> Contr (subtype_centralizer_subgroup (grp_image u)))
+  : Contr {s : B G -> B G & merely (s = f)}.
+Proof.
+  pose proof (cpi1 := contr_pi1_merely_pointed_equiv_weird_group _ _ mfv centr).
+  srapply (@contr_trivial_pin U [{s : B G -> B G & merely (s = f)}, (f; tr idpath)] 2).
+  intros x k; cbn in x.
+  (* admitted this for now but it's definitely true. *)
+  (* TODO: use match with 0, 1 and [n.+1] *)
+  admit.
+Admitted.
+
+Definition fixedby_merely_pointed_equiv_weird_group `{U : Univalence}
+  (* The problem here is actually getting a representative for v. Should be fine if G is a finite group. *)
+  {G : Group} (f : B G -> B G) (v : G $<~> G) (mfv : merely (f = fmap B v))
+  (centr : forall u : G $-> G,
+            IsEquiv u -> Contr (subtype_centralizer_subgroup (grp_image u)))
+  : FixedBy f.
+Proof.
+  pose proof (c := contr_componenet_merely_pointed_equiv_weird_group _ _ mfv centr).
+  assert (mfv' : merely (pointed_fun (fmap B v) = f)).
+  { strip_truncations; exact (tr mfv^). }
+  assert (p : f = fmap B v).
+  { pose proof (t := path_contr (A:={s : B G -> B G & merely (s = f)})
+                      (f; tr idpath)).
+    specialize (t (pointed_fun (fmap B v); mfv')).
+    exact (ap pr1 t). }
+  rewrite p.
+  exact (bbase; idpath).
+Admitted.
 
 (** ** Retracts *)
 

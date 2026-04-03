@@ -39,7 +39,7 @@ Definition HasFamilyFixedPoints {X A : Type} (F : X -> A -> A)
 Definition MerelyHasIndexedFixedPoints (X A : Type)
   := merely (forall (C : X -> A -> A), HasFamilyFixedPoints C).
 
-(* Is this equivalent to also haveing a [merely] inside [HasFamilyFixedPoints]? *)
+(* Is this equivalent to also having a [merely] inside [HasFamilyFixedPoints]? *)
 Definition HasMereIndexedFixedPoints (X A : Type)
   := forall C : X -> A -> A, merely (HasFamilyFixedPoints C).
 
@@ -574,26 +574,19 @@ Definition decpaths_helper_function {A : Type} (x y : A)
   : A -> A.
 Proof.
   intro a.
-  destruct (dx a) as [p|q].
-  - exact y.
-  - exact x.
+  exact (if (dx a) then y else x).
 Defined.
 
 Definition contr_hasfixedpoints_decpaths {A : Type}
   (fp : HasFixedPoints A) {x : A} (dx : forall a : A, Decidable (x = a))
   : Contr A.
 Proof.
-  srapply Build_Contr.
+  snapply Build_Contr.
   1: exact x.
   intros y.
   destruct (fp (decpaths_helper_function x y dx)) as [a p].
-  remember (dx a) as d eqn:e.
-  destruct d as [r | s].
-  - lhs exact (r @ p^).
-    unfold decpaths_helper_function.
-    by rewrite e.
+  unfold decpaths_helper_function in p.
+  destruct (dx a) as [r | s].
+  - exact (r @ p^).
   - contradiction s.
-    rhs_V exact p.
-    unfold decpaths_helper_function.
-    by rewrite e.
 Defined.

@@ -196,7 +196,7 @@ Definition help1 `{ua : Univalence}
   : (hfiber (connected_ptype_merely_const X) (fun _ => pt; tr idpath))
     <~> {x : X & X -> x = pt}.
 Proof.
-  refine (_ oE (help0 X)).
+  refine (_ oE help0 X).
   srapply (equiv_functor_sigma' equiv_idmap).
   intro x; simpl.
   symmetry; apply equiv_path_forall.
@@ -207,19 +207,15 @@ Definition help2 `{ua : Univalence}
   : (hfiber (connected_ptype_merely_const X) (fun _ => pt; tr idpath))
     <~> {u : {y : X & y = pt} & {h : X -> (u.1 = pt) & h pt = u.2}}.
 Proof.
-  refine (_ oE (help1 X)).
+  refine (_ oE help1 X).
   make_equiv_contr_basedpaths.
 Defined.
-
-Definition equiv_contr_sigma' {A : Type} (P : A -> Type) `{Contr A} (a : A)
-  : { x : A & P x } <~> P a
-  := equiv_transport _ (contr a) oE (equiv_contr_sigma P).
 
 Definition help3 `{ua : Univalence}
   (X : pType) `{IsConnected 0 X}
   : (hfiber (connected_ptype_merely_const X) (fun _ => pt; tr idpath))
     <~> {h : X -> (point X = pt) & h pt = idpath}
-  := @equiv_contr_sigma' _ _ _ (pt; idpath) oE (help2 X).
+  := equiv_contr_sigma _ oE help2 X.
 
 Definition help4 `{ua : Univalence}
   (X : pType) `{IsConnected 0 X}
@@ -230,7 +226,7 @@ Proof.
   issig.
 Defined.
 
-Instance component_equiv `{ua : Univalence}
+Instance isequiv_connected_ptype_merely_const `{ua : Univalence}
   {X : pType} `{IsConnected 0 X} (c : Contr (X ->* loops X))
   : IsEquiv (connected_ptype_merely_const X).
 Proof.

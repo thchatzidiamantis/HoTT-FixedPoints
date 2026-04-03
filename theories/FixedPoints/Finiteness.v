@@ -119,6 +119,10 @@ Proof.
   issig.
 Defined.
 
+Instance decidablepaths_strictlyfinite X `{StrictlyFinite X}
+  : DecidablePaths X
+  := decidablepaths_equiv _ equiv_fin^-1 _.
+
 (* jdc: if the implication was reversed, then you wouldn't need to invert e.  And it looks like most users of this lemma apply it to an inverted function. *)
 Definition strictlyfinite_equiv X {Y} (e : X -> Y) `{IsEquiv X Y e}
   : StrictlyFinite X -> StrictlyFinite Y
@@ -287,36 +291,21 @@ Proof.
     exists l.1.
     srapply in_class_of_path.
     exact l.2^.
-Time Defined.
+Defined.
 
 Definition group_hom_groupreps_strictlyfinite `{ua : Univalence} {G H : Group}
   `{StrictlyFinite G} `{StrictlyFinite H} (r : groupreps G H)
   : {f : G $-> H & in_class _ r f}.
 Proof.
-  apply group_hom_groupreps.
+  rapply group_hom_groupreps.
   - apply ispicompact_issigmacompact.
-    rapply issigmacompact_strictlyfinite.
-  - rapply issigmacompact_strictlyfinite.
-  - rapply issigmacompact_strictlyfinite.
+    apply issigmacompact_strictlyfinite.
+  - apply issigmacompact_strictlyfinite.
+  - napply issigmacompact_strictlyfinite.
     apply (strictlyfinite_equiv' _ (issig_GroupHomomorphism _ _)).
-    apply strictlyfinite_detachable_subset.
-    + exact _.
-    + Set Typeclasses Debug.
-      Time Fail exact _.
-      (* You introduced a typeclass search loop above, for hprops:
-
-         Goal:  Decidable foo (where foo is IsSemiGroupPreserving x).
-         Tries: decidable_finite_hprop.  Solves hprop part.
-         Goal:  Finite foo.
-         Tries: finite_strictlyfinite.
-         Goal:  StrictlyFinite foo.
-         Tries: strictlyfinite_decidable_hprop.  Solves hprop part.
-         Goal:  Decidable foo.
-      *)
-      apply decidable_issemigrouppreserving.
-      1: apply (ispicompact_issigmacompact (issigmacompact_strictlyfinite)).
-      exact (decidablepaths_equiv _ (equiv_fin)^-1 _).
-  - exact (decidablepaths_equiv _ (equiv_fin)^-1 _).
+    rapply strictlyfinite_detachable_subset.
+    rapply decidable_issemigrouppreserving.
+    exact (ispicompact_issigmacompact (issigmacompact_strictlyfinite)).
 Defined.
 
 Definition pointed_lift_map_bg `{ua : Univalence}

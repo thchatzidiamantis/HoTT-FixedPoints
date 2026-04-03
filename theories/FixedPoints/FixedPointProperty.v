@@ -230,23 +230,25 @@ Proof.
   issig.
 Defined.
 
-Definition component_equiv `{ua : Univalence}
+Instance component_equiv `{ua : Univalence}
   {X : pType} `{IsConnected 0 X} (c : Contr (X ->* loops X))
-  : IsEquiv (connected_ptype_merely_const  X).
+  : IsEquiv (connected_ptype_merely_const X).
 Proof.
   apply isequiv_contr_map.
   srapply (@conn_point_elim ua (-1) [_, (fun _ => pt; tr idpath)]).
   apply (contr_equiv' _ (help4 X)^-1).
 Defined.
 
+(* jdc: You can write [pconst] for [fun _ => pt].  Technically, this is the *pointed* function [fun _ => pt], so maybe it's better to write [const pt], so there is no confusion. *)
 Definition fixedby_comp_constant_contr_pfun_loops `{ua : Univalence}
   {X : pType} `{IsConnected 0 X} (c : Contr (X ->* loops X)) {f : X -> X}
-  (p : merely (f = (fun _ => pt)))
+  (p : merely (f = const pt))
   : FixedBy f.
 Proof.
-  pose (e := Build_Equiv _ _ _ (component_equiv c)).
-  exists (e^-1 (f; p)).
-  exact (ap10 (eisretr e (f; p))..1^ (e^-1 (f; p))).
+  (* jdc: This illustrates how useful equiv_intro is. *)
+  revert f p; apply equiv_sig_ind'.
+  equiv_intro (connected_ptype_merely_const X) x; cbn.
+  exact (x; idpath).
 Defined.
 
 Definition component_equiv_cor `{ua : Univalence}
@@ -254,10 +256,9 @@ Definition component_equiv_cor `{ua : Univalence}
   (p : merely (f = (fun _ => pt)))
   : f == (fun _ => f pt).
 Proof.
-  pose (e := Build_Equiv _ _ _ (component_equiv c)).
-  pose proof (q := (eisretr e (f; p))..1^); simpl in q.
-  intro x.
-  exact (ap10 q x @ ap10 q^ pt).  
+  revert f p; apply equiv_sig_ind'.
+  equiv_intro (connected_ptype_merely_const X) x; cbn.
+  reflexivity.
 Defined.
 
 Definition component_equiv' `{ua : Univalence}

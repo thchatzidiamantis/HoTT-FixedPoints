@@ -166,7 +166,7 @@ Proof.
   cbv; reflexivity.
 Defined.
 
-Instance strictlyfinite_decidable_hprop X `{IsHProp X} `{Decidable X}
+Definition strictlyfinite_decidable_hprop X `{IsHProp X} `{Decidable X}
   : StrictlyFinite X.
 Proof.
   destruct (dec X) as [x|nx].
@@ -217,7 +217,8 @@ Instance strictlyfinite_detachable_subset {X} `{StrictlyFinite X} (P : X -> Type
        `{forall x, IsHProp (P x)} `{forall x, Decidable (P x)}
   : StrictlyFinite { x:X & P x }.
 Proof.
-  exact _.
+  srapply strictlyfinite_sigma.
+  intro x; rapply strictlyfinite_decidable_hprop.
 Defined.
 
 Instance strictlyfinite_prod X Y `{StrictlyFinite X} `{StrictlyFinite Y}
@@ -273,7 +274,6 @@ Definition group_hom_groupreps `{ua : Univalence}
 Proof.
   srapply (fst merely_inhabited_iff_inhabited_stable).
   - rapply stable_decidable.
-    (* tcc: [srapply] freezes the whole thing here. *)
     apply cGH. intro a.
     apply decidable_in_class.
     intros b c.
@@ -302,7 +302,7 @@ Proof.
     apply strictlyfinite_detachable_subset.
     + exact _.
     + Set Typeclasses Debug.
-      Fail Timeout 1 exact _.
+      Time Fail exact _.
       (* You introduced a typeclass search loop above, for hprops:
 
          Goal:  Decidable foo (where foo is IsSemiGroupPreserving x).
@@ -310,7 +310,7 @@ Proof.
          Goal:  Finite foo.
          Tries: finite_strictlyfinite.
          Goal:  StrictlyFinite foo.
-         Tries: strictly_finite_decidable_hprop.  Solves hprop part.
+         Tries: strictlyfinite_decidable_hprop.  Solves hprop part.
          Goal:  Decidable foo.
       *)
       apply decidable_issemigrouppreserving.

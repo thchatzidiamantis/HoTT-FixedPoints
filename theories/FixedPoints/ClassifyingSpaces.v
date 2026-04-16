@@ -294,17 +294,6 @@ Definition equiv_pi1_map_bg_centralizer_grp_image `{U : Univalence}
   : Pi 1 [B G -> B H, fmap B f] <~> subtype_centralizer_subgroup (grp_image f)
   := Build_Equiv _ _ _ (isequiv_centralizer_grp_image_pi1_map_bg f).
 
-Definition equiv_map_bg `{Univalence}
-  (X : pType) `{IsConnected 0 X} (G : Group)
-  : (B (Pi 1 X) -> B G) <~> (X -> B G).
-Proof.
-  refine ((equiv_o_to_O (1 : trunc_index) X (B G)) oE _).
-  rapply equiv_precompose'; symmetry.
-  refine (pequiv_pclassifyingspace_pi1 (pTr 1 X) oE _).
-  refine (emap B _).
-  apply grp_iso_pi_Tr.
-Defined.
-
 Definition natequiv_bg_pi1_adjoint' `{Univalence} (X : pType) `{IsConnected 0 X}
   : NatEquiv (opyon (Pi1 X)) (opyon X o B).
 Proof.
@@ -324,6 +313,28 @@ Definition equiv_bg_pi1_adjoint' `{Univalence}
   : (Pi 1 X $-> G) <~> (X ->* B G).
 Proof.
   rapply natequiv_bg_pi1_adjoint'.
+Defined.
+
+Definition natequiv_map_bg `{Univalence}
+  (X : pType) `{IsConnected 0 X}
+  : NatEquiv (opyon (A:=Type) (B (Pi 1 X)) o B) (opyon (A:=Type) X o B).
+Proof.
+  unfold opyon.
+  refine (natequiv_compose (G := opyon (Tr 1 X) o B) _ _).
+  { snapply Build_NatEquiv.
+    1: intro; rapply (equiv_o_to_O (1 : trunc_index) X).
+    by srapply Build_Is1Natural. }
+  { refine (natequiv_prewhisker _ _).
+    refine (natequiv_opyon_equiv _^-1$).
+    refine (pequiv_pclassifyingspace_pi1 (pTr 1 X) o*E (emap B _)).
+    exact (grp_iso_pi_Tr 0 X). }
+Defined.
+
+Definition equiv_map_bg `{Univalence}
+  (X : pType) `{IsConnected 0 X} (G : Group)
+  : (B (Pi 1 X) -> B G) <~> (X -> B G).
+Proof.
+  rapply natequiv_map_bg.
 Defined.
 
 (* tcc: this takes almost 5 seconds. If I change it to 

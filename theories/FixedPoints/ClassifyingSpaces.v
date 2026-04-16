@@ -8,12 +8,12 @@ Require Import Pointed WildCat WildCat.Core.
 Require Import Homotopy.ClassifyingSpace.
 Require Import Colimits.Quotient GraphQuotient.
 Require Import Cubical.DPath PathSquare.
+Require Import FixedPoints.Groups.
+Require Import Homotopy.HomotopyGroup.
 Require Export Classes.interfaces.canonical_names (SgOp, sg_op,
     MonUnit, mon_unit, LeftIdentity, left_identity, RightIdentity, right_identity,
     Negate, negate, Associative, simple_associativity, associativity,
     LeftInverse, left_inverse, RightInverse, right_inverse, Commutative, commutativity).
-Require Import FixedPoints.Groups.
-Require Import Homotopy.HomotopyGroup.
 Export canonical_names.BinOpNotations.
 Export Homotopy.ClassifyingSpace.ClassifyingSpaceNotation.
 
@@ -293,6 +293,72 @@ Definition equiv_pi1_map_bg_centralizer_grp_image `{U : Univalence}
   {G H : Group} (f : G $-> H)
   : Pi 1 [B G -> B H, fmap B f] <~> subtype_centralizer_subgroup (grp_image f)
   := Build_Equiv _ _ _ (isequiv_centralizer_grp_image_pi1_map_bg f).
+
+Definition equiv_map_bg `{Univalence}
+  (X : pType) `{IsConnected 0 X} (G : Group)
+  : (B (Pi 1 X) -> B G) <~> (X -> B G).
+Proof.
+  refine ((equiv_o_to_O (1 : trunc_index) X (B G)) oE _).
+  rapply equiv_precompose'; symmetry.
+  refine (pequiv_pclassifyingspace_pi1 (pTr 1 X) oE _).
+  refine (emap B _).
+  apply grp_iso_pi_Tr.
+Defined.
+
+Definition natequiv_bg_pi1_adjoint' `{Univalence} (X : pType) `{IsConnected 0 X}
+  : NatEquiv (opyon (Pi1 X)) (opyon X o B).
+Proof.
+  refine (natequiv_compose _ (natequiv_grp_homo_pmap_bg _)).
+  refine (natequiv_compose (G := opyon (pTr 1 X) o B) _ _).
+  { snapply Build_NatEquiv.
+    1: intro; exact pequiv_ptr_rec.
+    exact (is1natural_prewhisker (G:=opyon X) B (opyoneda _ _ _)). }
+  { refine (natequiv_prewhisker _ _).
+    refine (natequiv_opyon_equiv _^-1$).
+    refine (pequiv_pclassifyingspace_pi1 (pTr 1 X) o*E (emap B _)).
+    exact (grp_iso_pi_Tr 0 X). }
+Defined.
+
+Definition equiv_bg_pi1_adjoint' `{Univalence}
+  (X : pType) `{IsConnected 0 X} (G : Group)
+  : (Pi 1 X $-> G) <~> (X ->* B G).
+Proof.
+  rapply natequiv_bg_pi1_adjoint'.
+Defined.
+
+(* tcc: this takes almost 5 seconds. If I change it to 
+Proof.
+  reflexivity.
+Defined.
+it takes less than 0.2 seconds (still a bit longer than most other proofs in this file). What is the difference? *)
+Time Definition equiv_map_bg_pointed `{Univalence}
+  (X : pType) `{IsConnected 0 X} (G : Group) (f : Pi 1 X $-> G)
+  : (equiv_map_bg X G (fmap B f)) = (equiv_bg_pi1_adjoint' X G f)
+  := idpath.
+
+(* TODO: make sure it computes well on pointed maps. *)
+Definition pi0_map_bg_groupreps_pi1 `{Univalence}
+  (X : pType) (G : Group) `{IsConnected 0 X}
+  : groupreps (Pi 1 X) G <~> Tr 0 (X -> B G).
+Proof.
+  refine (Trunc_functor_equiv 0 (equiv_map_bg X G) oE _).
+  srapply equiv_groupreps_pi0_map_bg.
+Defined.
+
+Definition pi1_map_bg_groupreps_pi1 `{Univalence}
+  (X : pType) (G : Group) `{IsConnected 0 X} (f : Pi 1 X $-> G)
+  : Pi 1 [(X -> B G), equiv_bg_pi1_adjoint' X G f]
+    <~> subtype_centralizer_subgroup (grp_image f).
+Proof.
+  refine (equiv_pi1_map_bg_centralizer_grp_image f oE _).
+  srapply groupiso_pi_functor.
+  symmetry.
+  srapply Build_pEquiv'.
+  - exact (equiv_map_bg X G).
+  - unfold "pt".
+    unfold ispointed_type.
+    reflexivity.
+Defined.
 
 (** ** Products of classifying spaces *)
 

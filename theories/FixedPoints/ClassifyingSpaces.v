@@ -344,8 +344,27 @@ Defined.
 it takes less than 0.2 seconds (still a bit longer than most other proofs in this file). What is the difference? *)
 Time Definition equiv_map_bg_pointed `{Univalence}
   (X : pType) `{IsConnected 0 X} (G : Group) (f : Pi 1 X $-> G)
-  : (equiv_map_bg X G (fmap B f)) = (equiv_bg_pi1_adjoint' X G f)
-  := idpath.
+  : equiv_map_bg X G (fmap B f) = equiv_bg_pi1_adjoint' X G f
+  := @idpath (X -> B G) (equiv_bg_pi1_adjoint' X G f). (* 0.09s on my system *)
+(*
+  := @idpath (X -> B G) (equiv_map_bg X G (fmap B f)). (* 4.2s *)
+  := idpath _.  (* 3.7s *)
+*)
+
+Time Definition equiv_map_bg_pointed' `{Univalence}
+  (X : pType) `{IsConnected 0 X} (G : Group) (f : Pi 1 X $-> G)
+  : (equiv_map_bg X G (fmap B f)) = (equiv_bg_pi1_adjoint' X G f).
+Proof.
+(*
+  Time apply idpath. (* 0.1s, but then Defined takes 0.9s. *)
+  Time exact idpath. (* 2.7s plus 0.9s for Defined, roughly matching the := idpath approach. *)
+*)
+  Time reflexivity. (* 0.1s, and Defined is only 0.07s. Quite fast, but not as fast as first := method. *)
+Time Defined. (* Varies, depending on body of proof. *)
+Set Printing Implicit.
+Unset Printing Notations.
+Print equiv_map_bg_pointed'. (* This is how I generated the fast := line. *)
+(* I don't understand why these various methods are so different.  I would just keep the fast := version, and add a comment that the speed for this is sensitive to the exact form of the proof, and that this form was chosen because it is fast. *)
 
 (* TODO: make sure it computes well on pointed maps. *)
 Definition pi0_map_bg_groupreps_pi1 `{Univalence}

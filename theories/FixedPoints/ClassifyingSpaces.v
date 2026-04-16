@@ -322,7 +322,7 @@ Proof.
   unfold opyon.
   refine (natequiv_compose (G := opyon (Tr 1 X) o B) _ _).
   { snapply Build_NatEquiv.
-    1: intro; rapply (equiv_o_to_O (1 : trunc_index) X).
+    1: intro; rapply (equiv_o_to_O (Tr 1) X).
     by srapply Build_Is1Natural. }
   { refine (natequiv_prewhisker _ _).
     refine (natequiv_opyon_equiv _^-1$).

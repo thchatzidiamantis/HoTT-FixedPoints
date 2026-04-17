@@ -3,7 +3,7 @@
 From HoTT Require Import Basics Types.
 Require Import Truncations.Core Truncations.Connectedness Truncations.SeparatedTrunc.
 Require Import Spaces.Finite.
-Require Import Universes.HProp.
+Require Import Universes.HProp HSet.
 Require Import Homotopy.ClassifyingSpace HomotopyGroup WhiteheadsPrinciple.
 Require Import Misc.BoundedSearch CompactTypes.
 Require Import Algebra.Groups.Group Subgroup Algebra.AbGroups.Centralizer.
@@ -256,6 +256,84 @@ Proof.
     + apply IH; exact _.
     + refine (strictlyfinite_equiv _ (@Unit_ind (fun u => Y' (inr u))) _).
       refine (isequiv_unit_ind (Y' o inr)).
+Defined.
+
+#[export] Instance strictlyfinite_quotient `{Univalence} {X} `{StrictlyFinite X}
+          (R : Relation X) `{is_mere_relation X R}
+          `{Reflexive _ R} `{Transitive _ R} `{Symmetric _ R}
+          {Rd : forall x y, Decidable (R x y)}
+  : StrictlyFinite (Quotient R).
+Proof.
+  assert (e := @equiv_fin X H0).
+  pose (R' x y := R (e^-1 x) (e^-1 y)).
+  assert (is_mere_relation _ R') by exact _.
+  assert (Reflexive R') by (intros ?; unfold R'; apply reflexivity).
+  assert (Symmetric R') by (intros ? ?; unfold R'; apply symmetry).
+  assert (Transitive R') by (intros ? ? ?; unfold R'; exact transitivity).
+  assert (R'd : forall x y, Decidable (R' x y))
+    by (intros ? ?; unfold R'; apply Rd).
+  srefine (strictlyfinite_equiv' _ (equiv_quotient_functor R' R e^-1 _) _).
+  1: by try (intros; split).
+  clearbody R'; clear e.
+  generalize dependent (@fcard X H0);
+    intros n. induction n as [|n IH]; intros R' ? ? ? ? ?.
+  - refine (strictlyfinite_equiv Empty _^-1 _).
+    exact (Quotient_rec R' _ Empty_rec (fun x _ _ => match x with end)).
+  - pose (R'' x y := R' (inl x) (inl y)).
+    assert (is_mere_relation _ R'') by exact _.
+    assert (Reflexive R'') by (intros ?; unfold R''; apply reflexivity).
+    assert (Symmetric R'') by (intros ? ?; unfold R''; apply symmetry).
+    assert (Transitive R'') by (intros ? ? ?; unfold R''; exact transitivity).
+    assert (forall x y, Decidable (R'' x y)) by (intros ? ?; unfold R''; apply R'd).
+    assert (inlresp := (fun x y => idmap)
+                        : forall x y, R'' x y -> R' (inl x) (inl y)).
+    destruct (@dec {x:Fin n & R' (inl x) (inr tt)} (issigmacompact_fin _ _ )) as [p|np].
+    { destruct p as [x r].
+      refine (strictlyfinite_equiv' (Quotient R'') _ _).
+      refine (Build_Equiv _ _ (Quotient_functor R'' R' inl inlresp) _).
+      apply isequiv_surj_emb.
+      - apply BuildIsSurjection.
+        refine (Quotient_ind_hprop R' _ _).
+        intros [y|[]]; apply tr.
+        + exists (class_of R'' y); reflexivity.
+        + exists (class_of R'' x); simpl.
+          apply qglue, r.
+      - apply isembedding_isinj_hset; intros u.
+        refine (Quotient_ind_hprop R'' _ _); intros v.
+        revert u; refine (Quotient_ind_hprop R'' _ _); intros u.
+        simpl; intros q.
+        apply qglue; unfold R''.
+        exact (related_quotient_paths R' (inl u) (inl v) q). }
+    { refine (strictlyfinite_equiv' (Quotient R'' + Unit) _ _).
+      refine (Build_Equiv _ _ (sum_ind (fun _ => Quotient R')
+                                      (Quotient_functor R'' R' inl inlresp)
+                                      (fun _ => class_of R' (inr tt))) _).
+      apply isequiv_surj_emb.
+      - apply BuildIsSurjection.
+        refine (Quotient_ind_hprop R' _ _).
+        intros [y|[]]; apply tr.
+        + exists (inl (class_of R'' y)); reflexivity.
+        + exists (inr tt); reflexivity.
+      - apply isembedding_isinj_hset; intros u.
+        refine (sum_ind _ _ _).
+        + refine (Quotient_ind_hprop R'' _ _); intros v.
+          revert u; refine (sum_ind _ _ _).
+          * refine (Quotient_ind_hprop R'' _ _); intros u.
+            simpl; intros q.
+            apply ap, qglue; unfold R''.
+            exact (related_quotient_paths R' (inl u) (inl v) q).
+          * intros []; simpl.
+            intros q.
+            apply related_quotient_paths in q; try exact _.
+            apply symmetry in q.
+            elim (np (v ; q)).
+        + intros []; simpl.
+          destruct u as [u|[]]; simpl.
+          * revert u; refine (Quotient_ind_hprop R'' _ _); intros u; simpl.
+            intros q.
+            apply related_quotient_paths in q; try exact _.
+            elim (np (u;q)).
+          * intros; reflexivity. }
 Defined.
 
 Definition decidable_issemigrouppreserving `{ua : Univalence}

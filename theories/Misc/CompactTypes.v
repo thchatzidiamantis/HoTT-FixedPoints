@@ -142,6 +142,22 @@ Proof.
   - exact (inr (fun a => r (tr a))).
 Defined.
 
+Definition compact_set_trunc_compact' `{Univalence} {A : Type}
+  (s : forall (x : Tr 0 A), {a : A & merely (tr a = x)})
+  : IsCompact (Tr 0 A) -> IsCompact A.
+Proof.
+  intro cpt; rapply iscompact_iscompactprops.
+  intros P dP.
+  destruct (cpt (Trunc_rec P)) as [l|r].
+  - intro a; strip_truncations.
+    exact (dP a).
+  - left; exists (s l.1).1.
+    pose proof (k:=(s l.1).2).
+    strip_truncations.
+    exact (fun x => l.2 (ap (Trunc_rec P) k # x)).
+  - exact (inr (fun a => r (tr a))).
+Defined.
+
 (** ** Basic definitions of searchable types *)
 
 (** A type is searchable if for every decidable predicate we can find a "universal witness" for whether the predicate is always true or not. *)

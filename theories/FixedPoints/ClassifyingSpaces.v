@@ -228,7 +228,21 @@ Definition pi1_map_bg_centralizer_grp_image {G H : Group} (f : G $-> H)
       -> Pi 1 [B G -> B H, fmap B f]
   := tr o (loops_map_bg_centralizer_grp_image f).
 
-Definition centralizer_grp_image_pi1_map_bg `{U : Univalence}
+Definition encode_test `{ua : Univalence} {G : Group}
+  {p q : bbase = bbase}
+  : ClassifyingSpace.encode bbase (p @ q)
+      = (ClassifyingSpace.encode (G:=G) bbase p)
+        * (ClassifyingSpace.encode bbase q).
+Proof.
+  revert p q.
+  equiv_intro (bloop (G:=G)) g1; equiv_intro (bloop (G:=G)) g2.
+  unfold ClassifyingSpace.encode.
+  rewrite transport_pp.
+  rewrite 3 ClassifyingSpace.codes_transport.
+  by rewrite 2 grp_unit_l.
+Defined.
+
+Definition centralizer_grp_image_pi1_map_bg `{ua : Univalence}
   {G H : Group} (f : G $-> H)
   : Pi 1 [B G -> B H, fmap B f]
     $-> subtype_centralizer_subgroup (grp_image f).

@@ -231,27 +231,33 @@ Definition pi1_map_bg_centralizer_grp_image {G H : Group} (f : G $-> H)
 Definition centralizer_grp_image_pi1_map_bg `{U : Univalence}
   {G H : Group} (f : G $-> H)
   : Pi 1 [B G -> B H, fmap B f]
-    -> subtype_centralizer_subgroup (grp_image f).
+    $-> subtype_centralizer_subgroup (grp_image f).
 Proof.
-  intro p.
-  strip_truncations; change (pointed_fun (fmap B f) = (fmap B f)) in p.
-  exists (bloop^-1 (ap10 p bbase)).
-  unfold subtype_centralizer_subgroup, subgroup_pred, subtype_centralizer.
-  apply tr.
-  intros h sh.
-  strip_truncations.
-  unfold centralizer.
-  apply (equiv_inj bloop).
-  rewrite 2 bloop_pp.
-  rewrite (eisretr bloop (ap10 p bbase)).
-  destruct sh as [g []]; clear h.
-  rewrite <- ap_fmap_b.
-  rhs_V napply (ap11_is_ap10_ap01 p (bloop g)).
-  symmetry; napply ap11_is_ap01_ap10.
+  unshelve napply Build_GroupHomomorphism.
+  { intro p.
+    strip_truncations; change (pointed_fun (fmap B f) = (fmap B f)) in p.
+    exists (bloop^-1 (ap10 p bbase)).
+    unfold subtype_centralizer_subgroup, subgroup_pred, subtype_centralizer.
+    apply tr.
+    intros h sh.
+    strip_truncations.
+    unfold centralizer.
+    apply (equiv_inj bloop).
+    rewrite 2 bloop_pp.
+    rewrite (eisretr bloop (ap10 p bbase)).
+    destruct sh as [g []]; clear h.
+    rewrite <- ap_fmap_b.
+    rhs_V napply (ap11_is_ap10_ap01 p (bloop g)).
+    symmetry; napply ap11_is_ap01_ap10. }
+  { intros p q; srapply path_sigma_hprop.
+    strip_truncations; simpl.
+    change (pointed_fun (fmap B f) = fmap B f) in p, q.
+    rewrite ap10_pp.
+    srapply encode_test. }
 Defined.
 
 Definition centralizer_grp_image_pi1_map_bg_pi1_map_bg_centralizer_grp_image
-  `{U : Univalence} {G H : Group} (f : G $-> H)
+  `{ua : Univalence} {G H : Group} (f : G $-> H)
   : centralizer_grp_image_pi1_map_bg f o pi1_map_bg_centralizer_grp_image f == idmap.
 Proof.
   intros [h ch]; strip_truncations.
@@ -262,7 +268,7 @@ Proof.
 Defined.
 
 Definition pi1_map_bg_centralizer_grp_image_centralizer_grp_image_pi1_map_bg
-  `{U : Univalence} {G H : Group} (f : G $-> H)
+  `{ua : Univalence} {G H : Group} (f : G $-> H)
   : pi1_map_bg_centralizer_grp_image f o centralizer_grp_image_pi1_map_bg f == idmap.
 Proof.
   intro u.
@@ -279,7 +285,7 @@ Proof.
   apply eisretr.
 Defined.
 
-Definition isequiv_centralizer_grp_image_pi1_map_bg `{U : Univalence}
+Definition isequiv_centralizer_grp_image_pi1_map_bg `{ua : Univalence}
   {G H : Group} (f : G $-> H)
   : IsEquiv (centralizer_grp_image_pi1_map_bg f).
 Proof.
@@ -289,10 +295,12 @@ Proof.
   - exact (pi1_map_bg_centralizer_grp_image_centralizer_grp_image_pi1_map_bg f).
 Defined.
 
-Definition equiv_pi1_map_bg_centralizer_grp_image `{U : Univalence}
+Definition equiv_pi1_map_bg_centralizer_grp_image `{ua : Univalence}
   {G H : Group} (f : G $-> H)
-  : Pi 1 [B G -> B H, fmap B f] <~> subtype_centralizer_subgroup (grp_image f)
-  := Build_Equiv _ _ _ (isequiv_centralizer_grp_image_pi1_map_bg f).
+  : GroupIsomorphism
+    (Pi 1 [B G -> B H, fmap B f])
+    (subtype_centralizer_subgroup (grp_image f))
+  := Build_GroupIsomorphism _ _ _ (isequiv_centralizer_grp_image_pi1_map_bg f).
 
 Definition natequiv_bg_pi1_adjoint' `{Univalence} (X : pType) `{IsConnected 0 X}
   : NatEquiv (opyon (Pi1 X)) (opyon X o B).
@@ -377,10 +385,11 @@ Defined.
 
 Definition pi1_map_bg_groupreps_pi1 `{Univalence}
   (X : pType) (G : Group) `{IsConnected 0 X} (f : Pi 1 X $-> G)
-  : Pi 1 [(X -> B G), equiv_bg_pi1_adjoint' X G f]
-    <~> subtype_centralizer_subgroup (grp_image f).
+  : GroupIsomorphism
+      (Pi 1 [(X -> B G), equiv_bg_pi1_adjoint' X G f])
+      (subtype_centralizer_subgroup (grp_image f)).
 Proof.
-  refine (equiv_pi1_map_bg_centralizer_grp_image f oE _).
+  refine (grp_iso_compose (equiv_pi1_map_bg_centralizer_grp_image f) _).
   srapply groupiso_pi_functor.
   symmetry.
   srapply Build_pEquiv'.

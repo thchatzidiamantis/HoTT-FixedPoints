@@ -309,7 +309,7 @@ Proof.
   - exact (pi1_map_bg_centralizer_grp_image_centralizer_grp_image_pi1_map_bg f).
 Defined.
 
-Definition equiv_pi1_map_bg_centralizer_grp_image `{ua : Univalence}
+Definition iso_pi1_map_bg_centralizer_grp_image `{ua : Univalence}
   {G H : Group} (f : G $-> H)
   : GroupIsomorphism
     (Pi 1 [B G -> B H, fmap B f])
@@ -403,7 +403,7 @@ Definition pi1_map_bg_groupreps_pi1 `{Univalence}
       (Pi 1 [(X -> B G), equiv_bg_pi1_adjoint' X G f])
       (subtype_centralizer_subgroup (grp_image f)).
 Proof.
-  refine (grp_iso_compose (equiv_pi1_map_bg_centralizer_grp_image f) _).
+  refine (grp_iso_compose (iso_pi1_map_bg_centralizer_grp_image f) _).
   srapply groupiso_pi_functor.
   symmetry.
   srapply Build_pEquiv'.

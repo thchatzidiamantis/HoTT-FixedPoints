@@ -297,8 +297,7 @@ Definition contr_pi1_merely_pointed_equiv_weird_group `{U : Univalence}
 Proof.
   strip_truncations.
   rewrite mfv.
-  rewrite (path_universe_uncurried (equiv_pi1_map_bg_centralizer_grp_image v)).
-  exact (centr v _).
+  exact (contr_equiv' _ (iso_pi1_map_bg_centralizer_grp_image v)^-1).
 Defined.
 
 Definition contr_componenet_merely_pointed_equiv_weird_group `{U : Univalence}

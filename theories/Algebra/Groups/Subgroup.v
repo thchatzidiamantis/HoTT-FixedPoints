@@ -1214,6 +1214,54 @@ Proof.
   apply grp_image_in.
 Defined.
 
+(** Conversely, if the image of a group homomorphism is maximal, then the homomorphism is surjective. *)
+Definition issurj_ismaximal_image {G H : Group}
+  (f : G $-> H) {max : IsMaximalSubgroup (G:=H) (grp_image f)}
+  : IsSurjection f.
+Proof.
+  intro h.
+  rapply contr_inhabited_hprop.
+  exact (max h).
+Defined.
+
+(** Homotopic group homomorphisms have isomorphic images. *)
+
+Definition grp_image_factorization {G H K : Group} (u : G $-> H) (v : H $-> K)
+  : (v $o u) $== (grp_homo_restr v _) $o grp_homo_image_in u
+  := fun x => idpath.
+
+Definition grp_image_homotopic_grp_homo
+  {G H : Group} {u v : G $-> H} (p : u $== v)
+  : subgroup_group (grp_image u) $-> subgroup_group (grp_image v).
+Proof.
+  srapply subgroup_corec.
+  - apply subgroup_incl.
+  - intros [h uh].
+    strip_truncations; apply tr.
+    exact (uh.1; (p _)^ @ uh.2).
+Defined.
+
+(** This result is later used for [q = p^], but we record that it holds more generally. *)
+Definition inv_grp_image_homotopic_grp_homo
+  {G H : Group} {u v : G $-> H} (p : u $== v) (q : v $== u)
+  : (grp_image_homotopic_grp_homo p) o (grp_image_homotopic_grp_homo q) == idmap.
+Proof.
+  intro x.
+  apply path_sigma_hprop.
+  reflexivity.
+Defined.
+
+Definition grp_iso_grp_image_homotopic_grp_homo
+  {G H : Group} {u v : G $-> H} (p : u $== v)
+  : subgroup_group (grp_image u) $<~> subgroup_group (grp_image v).
+Proof.
+  snapply Build_GroupIsomorphism.
+  1: exact (grp_image_homotopic_grp_homo p).
+  snapply isequiv_adjointify.
+  1: exact (grp_image_homotopic_grp_homo (fun x => inverse (p x))).
+  1,2: by apply inv_grp_image_homotopic_grp_homo.
+Defined.
+
 (** ** Image of a subgroup under a group homomorphism *)
 
 (** The image of a subgroup under group homomorphism. *) 

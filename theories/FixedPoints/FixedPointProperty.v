@@ -3,11 +3,11 @@
 From HoTT Require Import Basics Types.
 Require Import Algebra.Groups.Group Subgroup Algebra.AbGroups.Centralizer.
 Require Import Homotopy.ClassifyingSpace HomotopyGroup WhiteheadsPrinciple.
-Require Import FixedPoints.Groups ClassifyingSpaces.
 Require Import Pointed WildCat WildCat.Core.
 Require Import Circle.
 Require Import Suspension.
 Require Import Truncations.Core Truncations.Connectedness Truncations.Constant.
+Require Import Universes.TruncType.
 (* Results from Truncations.Constant might be useful as this progresses. *)
 Require Import HSpace.Core Pointed.Core.
 Require Import Colimits.Pushout Quotient.
@@ -17,7 +17,7 @@ Require Export Classes.interfaces.canonical_names (SgOp, sg_op,
     Negate, negate, Associative, simple_associativity, associativity,
     LeftInverse, left_inverse, RightInverse, right_inverse, Commutative, commutativity).
 Export canonical_names.BinOpNotations.
-Export Homotopy.ClassifyingSpace.ClassifyingSpaceNotation.
+Export Homotopy.ClassifyingSpace.Core.ClassifyingSpaceNotation.
 
 Local Open Scope pointed_scope.
 Local Open Scope trunc_scope.

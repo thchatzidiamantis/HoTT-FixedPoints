@@ -14,98 +14,13 @@ Require Export Classes.interfaces.canonical_names (SgOp, sg_op,
     MonUnit, mon_unit, LeftIdentity, left_identity, RightIdentity, right_identity,
     Negate, negate, Associative, simple_associativity, associativity,
     LeftInverse, left_inverse, RightInverse, right_inverse, Commutative, commutativity).
-Export canonical_names.BinOpNotations.
+Export Homotopy.ClassifyingSpace.Core.ClassifyingSpaceNotation.
 Export Homotopy.ClassifyingSpace.ClassifyingSpaceNotation.
 
 Local Open Scope pointed_scope.
 Local Open Scope trunc_scope.
 Local Open Scope mc_mult_scope.
 Local Open Scope path_scope.
-
-(** ** More on Compact Types *)
-
-(* jdc: maybe best to state this for contractible types?  And make it an Instance? *)
-Definition issigmacompact_contr {A : Type} `{Contr A} : IsSigmaCompact A.
-Proof.
-  intros P dP.
-  rapply (decidable_equiv _ (equiv_contr_sigma _)^-1).
-Defined.
-
-(* jdc: should we just use issearchable_bool and the implications? *)
-(* jdc: should we decide on a linear order of the various implications between variants of compactness and make one direction of each an instance?  Probably lots in the CompactTypes file should be instances. *)
-Definition issigmacompact_bool : IsSigmaCompact Bool.
-Proof.
-  intros P dP.
-  destruct (dP true) as [a | na].
-  1: left; exact (true; a).
-  destruct (dP false) as [b | nb].
-  1: left; exact (false; b).
-  right; intros [x px].
-  destruct x.
-  1: exact (na px).
-  exact (nb px).
-Defined.
-
-(* tcc: this exists for the other (equivalent) definition of [IsCompact]. I think I need to restructure that file and make it focus on [IsSigmaCompact] and [IsPiCompact]. *)
-Definition issigmacompact_retract {A R : Type} {f : A -> R} {g : R -> A}
-  (s : f o g == idmap) (c : IsSigmaCompact A)
-  : IsSigmaCompact R.
-Proof.
-  intros P dP; destruct (c (P o f) _) as [u|v].
-  1: left; exact (f u.1; u.2).
-  right; intros [r pr].
-  apply v.
-  exists (g r).
-  exact ((s r)^ # pr).
-Defined.
-
-Definition issigmacompact_equiv {A B : Type} (f : A -> B) `{!IsEquiv f}
-  (c : IsSigmaCompact B)
-  : IsSigmaCompact A
-  := issigmacompact_retract (eissect f) c.
-
-Definition issigmacompact_sigma {A : Type} {P : A -> Type}
-  (cA : IsSigmaCompact A) (cP : forall (a : A), IsSigmaCompact (P a))
-  : IsSigmaCompact (sig P).
-Proof.
-  intros Q dQ.
-  apply (decidable_equiv _ (equiv_sigma_assoc P Q)).
-  apply cA; intro a.
-  by apply cP; intro p.
-Defined.
-
-Definition issigmacompact_detachable_subset {A : Type} {P : A -> HProp}
-  (cA : IsSigmaCompact A) (dP : forall (a : A), Decidable (P a))
-  : IsSigmaCompact (sig P).
-Proof.
-  srapply (issigmacompact_sigma cA); cbn beta.
-  intro a.
-  destruct (equiv_decidable_hprop (P a)) as [e1|e2].
-  - rapply (issigmacompact_equiv e1).
-    exact issigmacompact_contr.
-  - rapply (issigmacompact_equiv e2).
-    exact (fun P dP => inr proj1).
-Defined.
-
-Definition issigmacompact_sum {A B : Type}
-  (cA : IsSigmaCompact A) (cB : IsSigmaCompact B)
-  : IsSigmaCompact (A + B).
-Proof.
-  apply (issigmacompact_equiv (sig_of_sum A B)).
-  apply issigmacompact_sigma.
-  - exact issigmacompact_bool.
-  - by destruct a.
-Defined.
-
-(* See if this follows from BoundedSearch and give a comment. *)
-Definition issigmacompact_fin {n : nat}
-  : IsSigmaCompact (Fin n).
-Proof.
-  induction n.
-  - exact (fun P dP => inr proj1).
-  - apply (issigmacompact_sum IHn).
-    exact issigmacompact_contr.
-Defined.
 
 (** ** Strictly finite types *)
 
@@ -157,7 +72,7 @@ Local Instance finite_strictlyfinite {X} `{StrictlyFinite X} : Finite X
 
 Definition issigmacompact_strictlyfinite {A : Type} `{StrictlyFinite A}
   : IsSigmaCompact A
-  := issigmacompact_equiv equiv_fin issigmacompact_fin.
+  := issigmacompact_equiv equiv_fin (issigmacompact_fin _).
 
 (* Why do we not have this in Quotient.v? Is it obvious? *)
 Lemma in_class_of_path `{Univalence}
@@ -287,7 +202,7 @@ Proof.
     assert (forall x y, Decidable (R'' x y)) by (intros ? ?; unfold R''; apply R'd).
     assert (inlresp := (fun x y => idmap)
                         : forall x y, R'' x y -> R' (inl x) (inl y)).
-    destruct (@dec {x:Fin n & R' (inl x) (inr tt)} (issigmacompact_fin _ _ )) as [p|np].
+    destruct (@dec {x:Fin n & R' (inl x) (inr tt)} (issigmacompact_fin _ _ _)) as [p|np].
     { destruct p as [x r].
       refine (strictlyfinite_equiv' (Quotient R'') _ _).
       refine (Build_Equiv _ _ (Quotient_functor R'' R' inl inlresp) _).
@@ -394,12 +309,12 @@ Definition pointed_lift_map_bg `{ua : Univalence}
   : {v : G $-> H & merely (f = fmap B v)}.
 Proof.
   pose (u := group_hom_groupreps cG' cH cGH _
-              ((equiv_groupreps_pi0_map_bg _ _)^-1 (tr f))).
+              ((equiv_groupreps_to_pi0_map_bg _ _)^-1 (tr f))).
   exists u.1.
   apply equiv_path_Tr.
-  change (tr f = pi0_map_bg_groupreps G H (class_of _ u.1)).
-  lhs_V exact (@eisretr _ _ _ (isequiv_pi0_map_bg_groupreps G H) (tr f)).
-  apply (ap (pi0_map_bg_groupreps G H)).
+  change (tr f = groupreps_to_pi0_map_bg G H (class_of _ u.1)).
+  lhs_V exact (@eisretr _ _ _ (isequiv_groupreps_to_pi0_map_bg G H) (tr f)).
+  apply (ap (groupreps_to_pi0_map_bg G H)).
   rapply path_in_class_of.
   exact u.2.
 Defined.
@@ -409,7 +324,7 @@ Definition pointed_lift_map_bg_strictlyfinite `{ua : Univalence} {G H : Group}
   : {v : G $-> H & merely (f = fmap B v)}.
 Proof.
   pose (u := group_hom_groupreps_strictlyfinite
-              ((equiv_groupreps_pi0_map_bg _ _)^-1 (tr f))).
+              ((equiv_groupreps_to_pi0_map_bg _ _)^-1 (tr f))).
   exists u.1.
   apply equiv_path_Tr.
   change (tr f = pi0_map_bg_groupreps G H (class_of _ u.1)).

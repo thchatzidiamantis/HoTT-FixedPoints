@@ -9,13 +9,12 @@ Require Import Misc.BoundedSearch CompactTypes.
 Require Import Algebra.Groups.Group Subgroup Algebra.AbGroups.Centralizer.
 Require Import Colimits.Quotient.
 Require Import Pointed WildCat.Core.
-Require Import FixedPoints.Groups ClassifyingSpaces.
 Require Export Classes.interfaces.canonical_names (SgOp, sg_op,
     MonUnit, mon_unit, LeftIdentity, left_identity, RightIdentity, right_identity,
     Negate, negate, Associative, simple_associativity, associativity,
     LeftInverse, left_inverse, RightInverse, right_inverse, Commutative, commutativity).
+Export canonical_names.BinOpNotations.
 Export Homotopy.ClassifyingSpace.Core.ClassifyingSpaceNotation.
-Export Homotopy.ClassifyingSpace.ClassifyingSpaceNotation.
 
 Local Open Scope pointed_scope.
 Local Open Scope trunc_scope.
@@ -262,9 +261,26 @@ Proof.
   by apply dpH.
 Defined.
 
+Definition IsHExistsCompact (A : Type)
+  := forall P : A -> Type, (forall a : A, Decidable (P a)) -> Decidable (hexists P).
+
+Definition ishprop_ishexistscompact `{Funext} (A : Type)
+  : IsHProp (IsHExistsCompact A) := _.
+
+Definition ishexistscompact_issigmacompact `{Funext} {A}
+  (c : merely (IsSigmaCompact A))
+  : IsHExistsCompact A.
+Proof.
+  strip_truncations.
+  intros P dP.
+  destruct (c P dP) as [l|r].
+  - left; exact (tr l).
+  - right; intros u; by strip_truncations.
+Defined.
+
 (* Weaker assumption: [G $-> H] has decidable paths? *)
 Definition group_hom_groupreps `{ua : Univalence}
-  {G H : Group} (cG' : IsPiCompact G) (cH : IsSigmaCompact H)
+  {G H : Group} (cG' : merely (IsPiCompact G)) (cH : IsHExistsCompact H)
   (cGH : IsSigmaCompact (G $-> H))
   (dpH : DecidablePaths H) (r : groupreps G H)
   : {f : G $-> H & in_class _ r f}.
@@ -275,7 +291,7 @@ Proof.
     apply decidable_in_class.
     intros b c.
     unfold conj_grp_homo.
-    apply decidable_trunc_decidable.
+    strip_truncations.
     apply cH; intro h.
     apply cG'; intro g.
     apply dpH.
@@ -291,9 +307,11 @@ Definition group_hom_groupreps_strictlyfinite `{ua : Univalence} {G H : Group}
   : {f : G $-> H & in_class _ r f}.
 Proof.
   rapply group_hom_groupreps.
-  - apply ispicompact_issigmacompact.
+  - strip_truncations; apply tr.
+    apply ispicompact_issigmacompact.
     apply issigmacompact_strictlyfinite.
-  - apply issigmacompact_strictlyfinite.
+  - strip_truncations.
+    apply ishexistscompact_issigmacompact, tr, issigmacompact_strictlyfinite.
   - napply issigmacompact_strictlyfinite.
     apply (strictlyfinite_equiv' _ (issig_GroupHomomorphism _ _)).
     rapply strictlyfinite_detachable_subset.
@@ -302,7 +320,7 @@ Proof.
 Defined.
 
 Definition pointed_lift_map_bg `{ua : Univalence}
-  {G H : Group} (cG' : IsPiCompact G) (cH : IsSigmaCompact H)
+  {G H : Group} (cG' : merely (IsPiCompact G)) (cH : IsHExistsCompact H)
   (cGH : IsSigmaCompact (G $-> H))
   (dpH : DecidablePaths H) (f : B G -> B H)
   (* note: [B H] is contractible if we get rid of the [merely]. *)

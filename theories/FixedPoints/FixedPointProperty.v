@@ -165,74 +165,64 @@ Proof.
 Defined.
 
 Definition connected_ptype_merely_const `{ua : Univalence}
-  (X : pType) `{IsConnected 0 X}
-  : X -> {f : X -> X & merely (f = (fun _ => pt))}.
+  (X Y : pType) `{IsConnected 0 Y}
+  : Y -> {f : X -> Y & merely (f = (const pt))}.
 Proof.
-  intro x.
-  exists (fun _ => x).
-  pose proof (p := merely_path_is0connected X x pt).
+  intro y.
+  exists (fun _ => y).
+  pose proof (p := merely_path_is0connected Y y pt).
   strip_truncations; apply tr.
   exact (ap (fun k => (fun _ => k)) p).
 Defined.
 
 Definition component_retr `{ua : Univalence}
-  {X : pType} `{IsConnected 0 X}
-  : (fun F => F.1 pt) o (connected_ptype_merely_const X) == idmap
+  (X Y : pType) `{IsConnected 0 Y}
+  : (fun F => F.1 pt) o (connected_ptype_merely_const X Y) == idmap
   := fun _ => idpath.
 
-Definition help0 `{ua : Univalence}
-  (X : pType) `{IsConnected 0 X}
-  : (hfiber (connected_ptype_merely_const X) (fun _ => pt; tr idpath))
-    <~> {x : X & (fun _ => x) = (fun _ : X => pt)}.
+Definition help1 `{ua : Univalence}
+  (X Y : pType) `{IsConnected 0 Y}
+  : (hfiber (connected_ptype_merely_const X Y) (const pt; tr idpath))
+    <~> {y : Y & X -> y = pt}.
 Proof.
   srapply equiv_functor_sigma_id.
   intro x; symmetry.
-  exact (equiv_path_sigma_hprop (connected_ptype_merely_const X pt)
-                                (fun _ => pt; tr idpath)).
-Defined.
-
-Definition help1 `{ua : Univalence}
-  (X : pType) `{IsConnected 0 X}
-  : (hfiber (connected_ptype_merely_const X) (fun _ => pt; tr idpath))
-    <~> {x : X & X -> x = pt}.
-Proof.
-  refine (_ oE help0 X).
-  srapply (equiv_functor_sigma' equiv_idmap).
-  intro x; simpl.
-  symmetry; apply equiv_path_forall.
+  refine (equiv_path_sigma_hprop _ _ oE _).
+  apply equiv_path_forall.
 Defined.
 
 Definition help2 `{ua : Univalence}
-  (X : pType) `{IsConnected 0 X}
-  : (hfiber (connected_ptype_merely_const X) (fun _ => pt; tr idpath))
-    <~> {u : {y : X & y = pt} & {h : X -> (u.1 = pt) & h pt = u.2}}.
+  (X Y : pType) `{IsConnected 0 Y}
+  : (hfiber (connected_ptype_merely_const X Y) (const pt; tr idpath))
+    <~> {u : {y : Y & y = pt} & {h : X -> (u.1 = pt) & h pt = u.2}}.
 Proof.
-  refine (_ oE help1 X).
+  refine (_ oE help1 X Y).
   make_equiv_contr_basedpaths.
 Defined.
 
 Definition help3 `{ua : Univalence}
-  (X : pType) `{IsConnected 0 X}
-  : (hfiber (connected_ptype_merely_const X) (fun _ => pt; tr idpath))
-    <~> {h : X -> (point X = pt) & h pt = idpath}
-  := equiv_contr_sigma _ oE help2 X.
+  (X Y : pType) `{IsConnected 0 Y}
+  : (hfiber (connected_ptype_merely_const X Y) (fun _ => pt; tr idpath))
+    <~> {h : X -> (point Y = pt) & h pt = idpath}
+  := equiv_contr_sigma _ oE help2 X Y.
+
 
 Definition help4 `{ua : Univalence}
-  (X : pType) `{IsConnected 0 X}
-  : (hfiber (connected_ptype_merely_const X) (fun _ => pt; tr idpath))
-    <~> (X ->* loops X).
+  (X Y : pType) `{IsConnected 0 Y}
+  : (hfiber (connected_ptype_merely_const X Y) (fun _ => pt; tr idpath))
+    <~> (X ->* loops Y).
 Proof.
-  refine (_ oE help3 X).
+  refine (_ oE help3 X Y).
   issig.
 Defined.
 
 Instance isequiv_connected_ptype_merely_const `{ua : Univalence}
-  {X : pType} `{IsConnected 0 X} (c : Contr (X ->* loops X))
-  : IsEquiv (connected_ptype_merely_const X).
+  {X Y : pType} `{IsConnected 0 Y} (c : Contr (X ->* loops Y))
+  : IsEquiv (connected_ptype_merely_const X Y).
 Proof.
   apply isequiv_contr_map.
   srapply (@conn_point_elim ua (-1) [_, (fun _ => pt; tr idpath)]).
-  apply (contr_equiv' _ (help4 X)^-1).
+  apply (contr_equiv' _ (help4 X Y)^-1).
 Defined.
 
 (* jdc: You can write [pconst] for [fun _ => pt].  Technically, this is the *pointed* function [fun _ => pt], so maybe it's better to write [const pt], so there is no confusion. *)
@@ -243,26 +233,81 @@ Definition fixedby_comp_constant_contr_pfun_loops `{ua : Univalence}
 Proof.
   (* jdc: This illustrates how useful equiv_intro is. *)
   revert f p; apply equiv_sig_ind'.
-  equiv_intro (connected_ptype_merely_const X) x; cbn.
+  equiv_intro (connected_ptype_merely_const X X) x; cbn.
   exact (x; idpath).
 Defined.
 
+Definition fixedby_comp_constant_contr_pfun_loops' `{ua : Univalence}
+  {G : Group} {f : B G -> B G}
+  (p : merely (f = const pt))
+  : FixedBy f.
+Proof.
+  apply fixedby_comp_constant_contr_pfun_loops.
+  2: exact p.
+  refine (contr_equiv' _ (pequiv_pequiv_postcompose pequiv_g_loops_bg)).
+  rapply contr_pmap_isconnected_inO.
+Defined.
+
 Definition component_equiv_cor `{ua : Univalence}
-  {X : pType} `{IsConnected 0 X} (c : Contr (X ->* loops X)) {f : X -> X}
-  (p : merely (f = (fun _ => pt)))
+  {X Y : pType} `{IsConnected 0 Y} (c : Contr (X ->* loops Y)) {f : X -> Y}
+  (p : merely (f = const pt))
   : f == (fun _ => f pt).
 Proof.
   revert f p; apply equiv_sig_ind'.
-  equiv_intro (connected_ptype_merely_const X) x; cbn.
+  equiv_intro (connected_ptype_merely_const X Y) x; cbn.
   reflexivity.
 Defined.
 
 Definition component_equiv' `{ua : Univalence}
-  {X : pType} `{IsConnected 0 X} (e : IsEquiv (connected_ptype_merely_const X))
-  : Contr (X ->* loops X).
+  {X Y : pType} `{IsConnected 0 Y} (e : IsEquiv (connected_ptype_merely_const X Y))
+  : Contr (X ->* loops Y).
 Proof.
   apply contr_map_isequiv in e.
-  apply (contr_equiv' _ (help4 X)).
+  apply (contr_equiv' _ (help4 X Y)).
+Defined.
+
+(** ** More on homotopy groups *)
+
+(* TODO:
+- names.
+- use [comp] from Cover.v or define comp'(x) := {y & merely (y=x)}. *)
+
+Definition pihelper {A : Type} (a b : A) (p : merely (a = b)) (k : nat)
+  : merely ((Pi k [A, a]) = Pi k [A, b]).
+Proof.
+  strip_truncations; apply tr.
+  by rewrite p.
+Defined.
+
+(* TODO: make it understand that the path space between HSets is an HSet. *)
+Definition pihelper' `{ua : Univalence}
+  {A : Type} (a b : A) (p : Tr 1 (a = b)) (k : nat)
+  : (pointed_type (Pi k [A, a]) = Pi k [A, b]).
+Proof.
+  destruct k.
+  (* - strip_truncations; apply tr. *)
+  (* by rewrite p. *)
+Admitted.
+
+(* see equiv_istrunc_contr_iterated_loops. This avoids funext. *)
+Definition contr_iterated_loops_istrunc (X : pType) {n : nat} {t : IsTrunc n X}
+  : Contr (iterated_loops n.+1 X).
+Proof.
+  revert X t.
+  induction n as [|n IHn].
+  - cbn.
+    intros; exact (contr_inhabited_hprop _ 1).
+  - intros X t.
+    refine (transport (fun Y => Contr Y) _ (IHn (loops X) _)).
+    apply (ap pointed_type (unfold_iterated_loops n.+1 X)^).
+Defined.
+
+Definition contr_pi_trunc (X : pType) {n : nat} `{IsTrunc n X}
+  : Contr (Pi (n.+1) X).
+Proof.
+  refine (contr_equiv' _ (equiv_tr _ _)).
+  1: rapply istrunc_succ; rapply istrunc_succ.
+  1,2: rapply contr_iterated_loops_istrunc.
 Defined.
 
 Definition contr_trivial_pin {ua : Univalence} {A : pType}

@@ -345,9 +345,9 @@ Proof.
               ((equiv_groupreps_to_pi0_map_bg _ _)^-1 (tr f))).
   exists u.1.
   apply equiv_path_Tr.
-  change (tr f = pi0_map_bg_groupreps G H (class_of _ u.1)).
-  lhs_V exact (@eisretr _ _ _ (isequiv_pi0_map_bg_groupreps G H) (tr f)).
-  apply (ap (pi0_map_bg_groupreps G H)).
+  change (tr f = groupreps_to_pi0_map_bg G H (class_of _ u.1)).
+  lhs_V exact (@eisretr _ _ _ (isequiv_groupreps_to_pi0_map_bg G H) (tr f)).
+  apply (ap (groupreps_to_pi0_map_bg G H)).
   rapply path_in_class_of.
   exact u.2.
 Defined.

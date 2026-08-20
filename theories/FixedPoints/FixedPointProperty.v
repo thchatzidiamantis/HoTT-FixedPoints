@@ -310,21 +310,22 @@ Proof.
   1,2: rapply contr_iterated_loops_istrunc.
 Defined.
 
-Definition contr_trivial_pin {ua : Univalence} {A : pType}
+Definition contr_trivial_pin_trunc {ua : Univalence} {A : pType}
   (n : trunc_index) {H0 : IsTrunc n A}
   (c : forall (x : A) (k : nat), Contr (Pi k [A, x]))
   : Contr A.
 Proof.
   srapply (contr_equiv Unit (B:=A) (fun _ => ispointed_type A)).
-  rapply (whiteheads_principle n).
-  - admit.
+  napply (whiteheads_principle n).
+  - rapply istrunc_leq.
+  - assumption.
   - rapply isequiv_contr_contr.
-    exact (c pt (0 : nat)).
+    exact (c pt 0%nat).
   - intros x k.
     rapply isequiv_contr_contr.
-    + admit.
+    + exact (contr_pi_contr k.+1 [Unit, x]).
     + exact (c pt (k.+1 : nat)).
-Admitted.
+Defined.
 
 Definition pi1helper {A : Type} (a b : A) (p : merely (a = b))
   : merely (pointed_type (Pi 1 [A, a]) = Pi 1 [A, b]).
@@ -352,7 +353,7 @@ Definition contr_componenet_merely_pointed_equiv_weird_group `{U : Univalence}
   : Contr {s : B G -> B G & merely (s = f)}.
 Proof.
   pose proof (cpi1 := contr_pi1_merely_pointed_equiv_weird_group _ _ mfv centr).
-  srapply (@contr_trivial_pin U [{s : B G -> B G & merely (s = f)}, (f; tr idpath)] 2).
+  srapply (@contr_trivial_pin_trunc U [{s : B G -> B G & merely (s = f)}, (f; tr idpath)] 2).
   intros x k; cbn in x.
   (* admitted this for now but it's definitely true. *)
   (* TODO: use match with 0, 1 and [n.+1] *)

@@ -347,13 +347,31 @@ Proof.
   by apply issurj_iterated_loops_connmap.
 Defined.
 
-(** The [n.+2]-nd homotopy group of an [n.+1]-truncated type vanishes. *)
+(** The homotopy groups of a contractible type vanish. *)
+Instance contr_pi_contr (n : nat) (X : pType) `{Contr X}
+  : Contr (Pi n X).
+Proof.
+  generalize dependent X; induction n; intros.
+  - exact _.
+  - exact (contr_equiv' _ (pi_loops n X)^-1%equiv).
+Defined.
+
+(** Homotopy groups below the connectivity vanish. *)
+Definition contr_pi_isconnected `{Univalence} (n : nat) (X : pType)
+  `{IsConnected n X}
+  : Contr (Pi n X).
+Proof.
+  rapply (contr_equiv' (Pi n (pTr n X))).
+  symmetry; rapply pequiv_pi_Tr.
+Defined.
+
+(** The [n.+1]-st homotopy group of an [n]-truncated type vanishes. *)
 Definition contr_pi_succ_istrunc `{Univalence} (n : nat) (X : pType)
-  `{IsTrunc n.+1 X}
-  : Contr (Pi n.+2 X).
+  `{IsTrunc n X}
+  : Contr (Pi n.+1 X).
 Proof.
   rapply contr_O_contr.
-  rapply (equiv_istrunc_contr_iterated_loops n.+2).
+  rapply (equiv_istrunc_contr_iterated_loops n.+1).
 Defined.
 
 (** An [n.+1]-truncated pointed [0]-connected type whose [n.+1]-st homotopy group vanishes is [n]-truncated. *)

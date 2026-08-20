@@ -187,7 +187,7 @@ Proof.
   assert (R'd : forall x y, Decidable (R' x y))
     by (intros ? ?; unfold R'; apply Rd).
   srefine (strictlyfinite_equiv' _ (equiv_quotient_functor R' R e^-1 _) _).
-  1: by try (intros; split).
+  1: by (intros; split).
   clearbody R'; clear e.
   generalize dependent (@fcard X H0);
     intros n. induction n as [|n IH]; intros R' ? ? ? ? ?.

@@ -276,7 +276,7 @@ Definition pihelper {A : Type} (a b : A) (p : merely (a = b)) (k : nat)
   : merely ((Pi k [A, a]) = Pi k [A, b]).
 Proof.
   strip_truncations; apply tr.
-  by rewrite p.
+  by destruct p.
 Defined.
 
 (* TODO: make it understand that the path space between HSets is an HSet. *)
@@ -284,10 +284,10 @@ Definition pihelper' `{ua : Univalence}
   {A : Type} (a b : A) (p : Tr 1 (a = b)) (k : nat)
   : (pointed_type (Pi k [A, a]) = Pi k [A, b]).
 Proof.
-  destruct k.
-  (* - strip_truncations; apply tr. *)
-  (* by rewrite p. *)
-Admitted.
+  apply path_universe_uncurried.
+  strip_truncations.
+  by destruct p.
+Defined.
 
 (* see equiv_istrunc_contr_iterated_loops. This avoids funext. *)
 Definition contr_iterated_loops_istrunc (X : pType) {n : nat} {t : IsTrunc n X}

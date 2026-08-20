@@ -34,15 +34,26 @@ Proof.
   exact (grp_homo_unit f).
 Defined.
 
-(** A complex 0 -> A -> B of groups is purely exact if and only if the map A -> B is an embedding. *)
+(** If [A -> B -> C] is exact at [B] with [A] contractible, then [B -> C] is an embedding.  Only [B] and [C] need to be groups; [A] can be any pointed type.  Note also that [(-1)]-exactness suffices, which is what one gets from a fiber sequence after truncating. *)
+Definition isembedding_isexact {A : pType} {B C : Group} {i : A ->* B} {f : B $-> C}
+  `{Contr A} (ex : IsExact (Tr (-1)) i f)
+  : IsEmbedding f.
+Proof.
+  (* Since [A] is contractible and [B] is a set, [i] is an embedding, which upgrades exactness to an equivalence between [A] and the fiber of [f] over the identity. This is needed by [equiv_cxfib]. *)
+  assert (IsEmbedding i) by (intro b; rapply istrunc_sigma).
+  intro c.
+  apply hprop_inhabited_contr; intro b.
+  rapply (contr_equiv' A).
+  exact ((equiv_grp_hfiber f c b)^-1 oE equiv_cxfib ex).
+Defined.
+
+(** A complex 0 -> A -> B of groups is purely exact if and only if the map A -> B is an embedding. (This is also true with [purely] replaced by [Tr (-1)].) *)
 Lemma iff_grp_isexact_isembedding {A B : Group} (f : A $-> B)
   : IsExact purely (grp_trivial_rec A) f <-> IsEmbedding f.
 Proof.
   split.
-  - intros ex b.
-    apply hprop_inhabited_contr; intro a.
-    rapply (contr_equiv' grp_trivial).
-    exact ((equiv_grp_hfiber f b a)^-1 oE pequiv_cxfib).
+  - intro ex.
+    exact (isembedding_isexact (isexact_purely_O _ _ (H:=ex))).
   - intro isemb_f.
     exists (grp_iscomplex_trivial f).
     intros y; rapply contr_inhabited_hprop.
@@ -54,3 +65,15 @@ Definition equiv_grp_isexact_kernel `{Univalence} {A B : Group} (f : A $-> B)
   : IsExact purely (grp_trivial_rec A) f <~> IsTrivialGroup (grp_kernel f)
   := (equiv_istrivial_kernel_isembedding f)^-1%equiv
        oE equiv_iff_hprop_uncurried (iff_grp_isexact_isembedding f).
+
+(** If [A -> B -> C -> D] is exact at [B] and [C], with [A] and [D] contractible, then the middle map is an isomorphism.  Only [B] and [C] need to be groups. *)
+Definition grp_iso_isexact {A : pType} {B C : Group} {D : pType}
+  {h : A ->* B} {f : B $-> C} {g : C ->* D} `{Contr A} `{Contr D}
+  (exl : IsExact (Tr (-1)) h f) (exr : IsExact (Tr (-1)) f g)
+  : GroupIsomorphism B C.
+Proof.
+  snapply (Build_GroupIsomorphism _ _ f).
+  napply isequiv_surj_emb.
+  - exact (isconnmap_O_isexact_base_contr _ f g).
+  - exact (isembedding_isexact exl).
+Defined.

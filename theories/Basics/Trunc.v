@@ -51,6 +51,14 @@ Proof.
     symmetry; apply trunc_index_inc'_succ.
 Defined.
 
+Definition trunc_index_inc_succ@{} (k : trunc_index) (n : nat)
+  : trunc_index_inc k.+1 n = (trunc_index_inc k n).+1.
+Proof.
+  simple_induction n n IHn.
+  - reflexivity.
+  - exact (ap trunc_S IHn).
+Defined.
+
 Definition nat_to_trunc_index@{} (n : nat) : trunc_index
   := (trunc_index_inc minus_two n).+2.
 
@@ -571,4 +579,4 @@ Definition istrunc_inhabited_istrunc {n : trunc_index}
   : IsTrunc n.+1 A
   := istrunc_S _ (fun a b => H a a b).
 
-(** If you are looking for a theorem about truncation, you may want to read the note "Finding Theorems" in "STYLE.md". *)
+(** If you are looking for a theorem about truncation, you may want to read the note "Finding Theorems" in "doc/STYLE.md". *)

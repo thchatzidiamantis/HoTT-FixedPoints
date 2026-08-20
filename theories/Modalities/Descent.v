@@ -215,7 +215,7 @@ Definition equiv_path_OO `{O' <= Sep O}
   : O (x = y) <~> (to O' X x = to O' X y)
   := Build_Equiv _ _ (path_OO x y) _.
 
-(** [functor_hfiber] on a pair of [O']-equivalences is an [O]-equivalence. *)
+(** [functor_hfiber] on a pair of [O']-equivalences is an [O]-equivalence. Is this true when [h] is only assumed to be an [O]-equivalence? (See strengthened version of [OO_conn_map_isconnected] below.) *)
 #[export] Instance OO_inverts_functor_hfiber
        {A B C D : Type} {f : A -> B} {g : C -> D} {h : A -> C} {k : B -> D}
        (p : k o f == g o h) (b : B)
@@ -244,22 +244,30 @@ Definition equiv_OO_functor_hfiber_to_O
   : O (hfiber f x) <~> O (hfiber (O_functor O' f) (to O' X x))
   := Build_Equiv _ _ _ (OO_inverts_functor_hfiber_to_O f x).
 
-(** Theorem 3.1(iii) of RSS: any map between [O']-connected types is [O]-connected.  (Part (ii) is just the version for dependent projections.) *)
+(** Any map from an [O]-connected type to an [O']-connected type is [O]-connected.  Taking [O = O'] gives Theorem 3.1(iii) of RSS. (Part (ii) is just the version for dependent projections.) *)
 Definition OO_conn_map_isconnected
-       {Y X : Type} `{IsConnected O' Y, IsConnected O' X} (f : Y -> X)
+       {Y X : Type} `{IsConnected O Y, IsConnected O' X} (f : Y -> X)
   : IsConnMap O f.
 Proof.
-  intros x; exact (contr_equiv' _ (equiv_OO_functor_hfiber_to_O f x)^-1).
+  intros x; unfold IsConnected.
+  rapply (contr_equiv' (O Y)).
+  (* By the previous result, [O] of the fiber is equivalent to [O] of the fiber of [O_functor O' f]: *)
+  rhs' napply (equiv_OO_functor_hfiber_to_O f x).
+  (* And [O Y] is equivalent to [O (O' Y)]: *)
+  lhs' rapply (equiv_O_functor_to_O_O_leq O O' Y).
+  (* Finally, since [O' X] is contractible, the fiber is the same as the domain [O' Y]. *)
+  apply equiv_O_functor.
+  symmetry; rapply equiv_sigma_contr.
 Defined.
 
 Definition OO_isconnected_hfiber
-       {Y X : Type} `{IsConnected O' Y, IsConnected O' X} (f : Y -> X) (x : X)
+       {Y X : Type} `{IsConnected O Y, IsConnected O' X} (f : Y -> X) (x : X)
   : IsConnected O (hfiber f x)
   := OO_conn_map_isconnected f x.
 
-(** Theorem 3.1(iv) of RSS: an [O]-modal map between [O']-connected types is an equivalence. *)
+(** An [O]-modal map from an [O]-connected type to an [O']-connected type is an equivalence.  When [O = O'], this gives Theorem 3.1(iv) of RSS. *)
 Definition OO_isequiv_mapino_isconnected
-       {Y X : Type} `{IsConnected O' Y, IsConnected O' X} (f : Y -> X) `{MapIn O _ _ f}
+       {Y X : Type} `{IsConnected O Y, IsConnected O' X} (f : Y -> X) `{MapIn O _ _ f}
   : IsEquiv f.
 Proof.
   apply (isequiv_conn_ino_map O).
@@ -267,10 +275,10 @@ Proof.
   - assumption.
 Defined.
 
-(** Theorem 3.1(vi) of RSS (and part (v) is just the analogue for dependent projections). *)
+(** When [O = O'], this is Theorem 3.1(vi) of RSS.  (Part (v) is just the analogue for dependent projections.) *)
 Definition OO_conn_map_functor_hfiber {A B C D : Type}
            {f : A -> B} {g : C -> D} {h : A -> C} {k : B -> D}
-           `{IsConnMap O' _ _ h, IsConnMap O' _ _ k}
+           `{IsConnMap O _ _ h, IsConnMap O' _ _ k}
            (p : k o f == g o h) (b : B)
   : IsConnMap O (functor_hfiber p b).
 Proof.
@@ -338,21 +346,21 @@ Definition equiv_OO_pullback {A B C : Type} (f : B -> A) (g : C -> A)
   : O (Pullback f g) <~> O (Pullback (O_functor O' f) (O_functor O' g))
   := Build_Equiv _ _ _ (OO_inverts_functor_pullback_to_O f g).
 
-(** The "if" direction of CORS Proposition 2.31, and the nontrivial part of Theorem 3.1(xi) of RSS.  Note that we could also deduce Theorem 3.1(iii) of RSS from this. *)
+(** This is a strengthening of the "if" direction of CORS Proposition 2.31.  In 2.31, [g o f] is assumed to be [O']-connected, but here we only require it to be [O]-connected.  When [O = O'], this gives the nontrivial part of Theorem 3.1(xi) of RSS.  Note that we could also deduce Theorem 3.1(iii) of RSS from this. *)
 Definition OO_cancelL_conn_map
            {Y X Z : Type} (f : Y -> X) (g : X -> Z)
-           `{IsConnMap O' _ _ (g o f)} `{IsConnMap O' _ _ g}
+           `{IsConnMap O _ _ (g o f)} `{IsConnMap O' _ _ g}
   : IsConnMap O f.
 Proof.
-  apply conn_map_OO_inverts.
-  napply (cancelL_isequiv (O_functor O' g)).
-  1:exact _.
-  exact (isequiv_homotopic _ (O_functor_compose O' f g)).
+  intro x.
+  (* The fiber of [f] is equivalent to the fiber of a map between the fibers of [g o f] and [g], so this follows immediately from [OO_isconnected_hfiber]. *)
+  apply (isconnected_equiv' O _ (hfiber_hfiber_compose_map f g x)).
+  apply OO_isconnected_hfiber.
 Defined.
 
 End LeftExactness.
 
-(** Here's the "only if" direction of CORS Proposition 2.31.  Note that the hypotheses are different from those of the "if" direction, and the proof is shorter than the one given in CORS. *)
+(** Here's the "only if" direction of CORS Proposition 2.31.  Note that the hypotheses on [O] and [O'] are different from those of the "if" direction, and the proof is shorter than the one given in CORS.  Also note that it is not possible to weaken the assumption on [g o f] to being [O]-connected (e.g. take [f] to be the identity). *)
 Definition OO_cancelR_conn_map
        (O' O : ReflectiveSubuniverse@{u}) `{O_leq@{u u u} O O', O' <= Sep O}
        {Y X Z : Type} (f : Y -> X) (g : X -> Z)

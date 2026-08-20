@@ -102,6 +102,7 @@ Require Export HoTT.Modalities.Meet.
 Require Export HoTT.Modalities.CoreflectiveSubuniverse.
 
 Require Export HoTT.Spaces.Nat.
+Require Export HoTT.Spaces.SInt.
 Require Export HoTT.Spaces.Int.
 Require Export HoTT.Spaces.FreeInt.
 Require Export HoTT.Spaces.Pos.
@@ -150,7 +151,7 @@ Require Export HoTT.Algebra.Universal.TermAlgebra.
 Require Export HoTT.Analysis.Locator.
 
 Require Export HoTT.Homotopy.HomotopyGroup.
-Require Export HoTT.Homotopy.PinSn.
+Require Export HoTT.Homotopy.PiSpheres.
 Require Export HoTT.Homotopy.WhiteheadsPrinciple.
 Require Export HoTT.Homotopy.BlakersMassey.
 Require Export HoTT.Homotopy.Suspension.

@@ -2,6 +2,9 @@ From HoTT Require Import Basics Types.
 Require Import Join.Core Join.JoinAssoc Suspension Spaces.Spheres.
 From HoTT.WildCat Require Import Core Universe Equiv.
 Require Import Spaces.Nat.Core.
+Require Import Pointed.Core Pointed.pEquiv Pointed.pSusp.
+
+Local Open Scope pointed_scope.
 
 (** * [Join Bool A] is equivalent to [Susp A]
 
@@ -70,3 +73,19 @@ Proof.
   refine (equiv_bool_pow_sphere _ oE _).
   apply join_join_power.
 Defined.
+
+(** A pointed version of [equiv_join_sphere], starting in dimension 0. *)
+Definition pequiv_pjoin_sphere (n m : nat)
+  : pjoin (psphere n) (Sphere m) <~>* psphere (n + m.+1)%nat
+  := Build_pEquiv' (equiv_join_sphere n.+1 m.+1) 1.
+
+(** The suspension of a join is the join with one factor suspended. *)
+Definition equiv_susp_join (A B : Type)
+  : Susp (Join A B) <~> Join (Susp A) B
+  := equiv_functor_join (equiv_join_susp A) equiv_idmap
+       oE join_assoc Bool A B
+       oE (equiv_join_susp (Join A B))^-1%equiv.
+
+Definition pequiv_psusp_join (A B : Type)
+  : psusp (Join A B) <~>* pjoin (psusp A) B
+  := Build_pEquiv' (equiv_susp_join A B) 1.

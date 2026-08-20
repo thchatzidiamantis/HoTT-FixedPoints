@@ -4,7 +4,7 @@ Require Import Pointed.
 Require Import Modalities.ReflectiveSubuniverse Truncations.Core.
 From HoTT.Algebra.AbGroups Require Import AbelianGroup Z.
 Require Import Homotopy.HomotopyGroup.
-Require Import Homotopy.PinSn.
+Require Import Homotopy.PiSpheres.
 Require Import Spaces.Int Spaces.Circle.
 
 Require Import Spaces.Torus.Torus.

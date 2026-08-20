@@ -637,7 +637,7 @@ Defined.
 Definition grp_pow_unit {G : Group} (n : Int)
   : grp_pow (G:=G) mon_unit n = mon_unit.
 Proof.
-  snapply (int_iter_invariant n _ (fun g => g = mon_unit)); cbn.
+  snapply (int_iter_invariant _ (fun g => g = mon_unit)); cbn.
   1, 2: apply paths_ind_r.
   - apply grp_unit_r.
   - lhs napply grp_unit_r. exact grp_inv_unit.
@@ -649,28 +649,27 @@ Defined.
 (** The next two results tell us how [grp_pow] unfolds. *)
 Definition grp_pow_succ {G : Group} (n : Int) (g : G)
   : grp_pow g (n.+1)%int = g * grp_pow g n
-  := int_iter_succ_l _ _ _.
+  := idpath.
 
 Definition grp_pow_pred {G : Group} (n : Int) (g : G)
   : grp_pow g (n.-1)%int = g^ * grp_pow g n
-  := int_iter_pred_l _ _ _.
+  := idpath.
 
 (** [grp_pow] satisfies an additive law of exponents. *)
 Definition grp_pow_add {G : Group} (m n : Int) (g : G)
   : grp_pow g (n + m)%int = grp_pow g n * grp_pow g m.
 Proof.
-  lhs napply int_iter_add.
-  induction n; cbn.
-  1: symmetry; exact (grp_unit_l _).
-  1: rewrite int_iter_succ_l, grp_pow_succ.
-  2: rewrite int_iter_pred_l, grp_pow_pred; cbn.
-  1,2 : rhs_V srapply associativity;
-        apply ap, IHn.
+  revert n.
+  rapply (int_homotopic (g *.)); cbn beta.
+  - symmetry; exact (grp_unit_l _).
+  - reflexivity.
+  - intro n; simpl.
+    symmetry; apply associativity.
 Defined.
 
 (** [grp_pow] commutes negative exponents to powers of the inverse *)
 Definition grp_pow_neg {G : Group} (n : Int) (g : G)
-  : grp_pow g (int_neg n) = grp_pow g^ n.
+  : grp_pow g (- n)%int = grp_pow g^ n.
 Proof.
   lhs napply int_iter_neg.
   cbn; unfold grp_pow.
@@ -699,18 +698,14 @@ Defined.
 Definition grp_pow_int_mul {G : Group} (m n : Int) (g : G)
   : grp_pow g (m * n)%int = grp_pow (grp_pow g m) n.
 Proof.
-  induction n.
+  revert n.
+  rapply (int_homotopic (grp_pow g m *.)); cbn beta.
   - simpl.
     by rewrite int_mul_0_r.
-  - rewrite int_mul_succ_r.
-    rewrite grp_pow_add.
-    rewrite grp_pow_succ.
-    apply grp_cancelL, IHn.
-  - rewrite int_mul_pred_r.
-    rewrite grp_pow_add.
-    rewrite grp_pow_neg_inv.
-    rewrite grp_pow_pred.
-    apply grp_cancelL, IHn.
+  - intro n.
+    rewrite int_mul_succ_r.
+    by rewrite grp_pow_add.
+  - reflexivity.
 Defined.
 
 (** If [h] commutes with [g], then [h] commutes with [grp_pow g n]. *)
@@ -718,14 +713,14 @@ Definition grp_pow_commutes {G : Group} (n : Int) (g h : G)
   (p : h * g = g * h)
   : h * (grp_pow g n) = (grp_pow g n) * h.
 Proof.
-  induction n.
+  revert n.
+  rapply (int_homotopic (g *.)); cbn beta.
   - by apply grp_g1_1g.
-  - rewrite grp_pow_succ.
-    napply grp_commutes_op; assumption.
-  - rewrite grp_pow_pred.
-    napply grp_commutes_op.
-    2: assumption.
-    apply grp_commutes_inv, p.
+  - intro n; simpl.
+    rewrite 2 simple_associativity.
+    by rewrite p.
+  - intro n; simpl.
+    by rewrite simple_associativity.
 Defined.
 
 (** [grp_pow g n] commutes with [g]. *)
@@ -740,28 +735,16 @@ Definition grp_pow_mul {G : Group} (n : Int) (g h : G)
   (c : g * h = h * g)
   : grp_pow (g * h) n = (grp_pow g n) * (grp_pow h n).
 Proof.
-  induction n.
+  revert n.
+  rapply (int_homotopic ((g * h) *.)); cbn beta.
   - simpl.
     symmetry; napply grp_unit_r.
-  - rewrite 3 grp_pow_succ.
-    rewrite IHn.
-    rewrite 2 grp_assoc.
-    apply grp_cancelR.
-    rewrite <- 2 grp_assoc.
-    apply grp_cancelL.
-    apply grp_pow_commutes.
-    exact c^%path.
-  - simpl.
-    rewrite 3 grp_pow_pred.
-    rewrite IHn.
-    rewrite 2 grp_assoc.
-    apply grp_cancelR.
-    rewrite c.
-    rewrite grp_inv_op.
-    rewrite <- 2 grp_assoc.
-    apply grp_cancelL.
-    apply grp_pow_commutes.
-    symmetry; apply grp_commutes_inv, c.
+  - reflexivity.
+  - intro n; simpl.
+    rewrite simple_associativity.
+    rewrite <- (simple_associativity g (grp_pow g n) h).
+    rewrite <- (grp_pow_commutes _ _ _ c^).
+    by rewrite 2 simple_associativity.
 Defined.
 
 (** ** The category of Groups *)
@@ -969,17 +952,18 @@ Definition grp_prod : Group -> Group -> Group.
 Proof.
   intros G H.
   snapply (Build_Group (G * H)).
-  4: repeat split.
   - intros [g1 h1] [g2 h2].
     exact (g1 * g2, h1 * h2).
   - exact (1, 1).
   - exact (functor_prod inv inv).
-  - exact _.
-  - intros x y z; apply path_prod'; apply simple_associativity.
-  - intros x; apply path_prod'; apply left_identity.
-  - intros x; apply path_prod'; apply right_identity.
-  - intros x; apply path_prod'; apply left_inverse.
-  - intros x; apply path_prod'; apply right_inverse.
+  - split.
+    + repeat split.
+      * exact _.
+      * intros x y z; apply path_prod'; apply simple_associativity.
+      * intros x; apply path_prod'; apply left_identity.
+      * intros x; apply path_prod'; apply right_identity.
+    + intros x; apply path_prod'; apply left_inverse.
+    + intros x; apply path_prod'; apply right_inverse.
 Defined.
 
 (** Maps into the direct product can be built by mapping separately into each factor. *)

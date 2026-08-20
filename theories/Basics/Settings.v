@@ -5,9 +5,12 @@
 (** ** Plugins *)
 
 (** Load the Ltac plugin. This is the tactic language we use for proofs. *)
-Declare ML Module "ltac_plugin:rocq-runtime.plugins.ltac".
+Declare ML Module "rocq-runtime.plugins.ltac".
+
+(** If you want to use Ltac2 in a file, there is no need to declare a module.  You just use [From Ltac2 Require Import Ltac2.] *)
+
 (** Load the number string notation plugin. Allowing us to write numbers like [1234]. *)
-Declare ML Module "number_string_notation_plugin:rocq-runtime.plugins.number_string_notation".
+Declare ML Module "rocq-runtime.plugins.number_string_notation".
 
 (** ** Proofs *)
 
@@ -40,6 +43,9 @@ Global Set Printing Primitive Projection Parameters.
 
 (** This flag removes parameters from constructors in patterns that appear in a match statement. *)
 Global Set Asymmetric Patterns.
+(** The warning clause here can be removed once our minimum Rocq version is 9.3. *)
+#[warning="-unknown-option"]
+Global Set Asymmetric Patterns No Implicits.
 
 (** ** Unification *)
 
@@ -73,3 +79,8 @@ Register reverse_coercion as core.coercion.reverse_coercion.
 
 (** Keywords for blacklisting from search function *)
 Add Search Blacklist "_admitted" "_subproof" "Private_".
+
+(** ** Warnings *)
+
+(** Rocq 9.2 complains if you use "Notation" when you could use "Abbreviation".  However, Rocq 9.1 doesn't support the Abbreviation command, so unless Rocq 9.2 is our minimum, we will continue to use "Notation".  This suppresses the resulting warnings. *)
+Global Set Warnings "-notation-for-abbreviation".

@@ -105,6 +105,9 @@ contrib/*.bak.*
 # ignore dune _build directory
 _build/
 
+# ignore deploy staging directory
+deploy-doc/
+
 # ignore _CoqProject since we autogenerate it
 _CoqProject
 
@@ -113,3 +116,9 @@ nix/profiles/
 
 # Ignore the file to bench
 file_to_bench
+
+# Local AI assistant state
+/.agents/
+/.claude/
+/.codex/
+/.pi/

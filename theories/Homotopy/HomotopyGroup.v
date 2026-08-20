@@ -1,7 +1,10 @@
 From HoTT Require Import Basics Types Pointed HSet.
-Require Import Modalities.Modality.
-Require Import Truncations.Core Truncations.SeparatedTrunc.
+Require Import Modalities.Modality Modalities.Identity.
+Require Import Truncations.Core Truncations.SeparatedTrunc
+  Truncations.Connectedness.
 Require Import Algebra.AbGroups.AbelianGroup.
+Require Import Spaces.Finite.Tactics.
+Require Import Homotopy.SuccessorStructure Homotopy.ExactSequence.
 From HoTT.WildCat Require Import Core Universe Equiv.
 
 Local Open Scope nat_scope.
@@ -34,6 +37,8 @@ Instance is01cat_homotopygroup_type (n : nat)
   : Is01Cat (HomotopyGroup_type n) := ltac:(destruct n; exact _).
 Instance is1cat_homotopygroup_type (n : nat)
   : Is1Cat (HomotopyGroup_type n) := ltac:(destruct n; exact _).
+Instance hasequivs_homotopygroup_type (n : nat)
+  : HasEquivs (HomotopyGroup_type n) := ltac:(destruct n; exact _).
 Instance is0functor_homotopygroup_type_ptype (n : nat)
   : Is0Functor (HomotopyGroup_type_ptype n)
   := ltac:(destruct n; exact _).
@@ -46,8 +51,7 @@ Instance is1functor_homotopygroup_type_ptype (n : nat)
   definitionally equal to [Pi 1 (iterated_loops n X)] *)
 Definition Pi1 (X : pType) : Group.
 Proof.
-  srapply (Build_Group (Tr 0 (loops X)));
-    repeat split.
+  srapply (Build_Group (Tr 0 (loops X))).
   (** Operation *)
   - intros x y.
     strip_truncations.
@@ -57,33 +61,35 @@ Proof.
   (** Inverse *)
   - srapply Trunc_rec; intro x.
     exact (tr x^).
-  (** [IsHSet] *)
-  - exact _.
-  (** Associativity *)
-  - intros x y z.
-    strip_truncations.
-    cbn; apply ap.
-    apply concat_p_pp.
-  (** Left identity *)
-  - intro x.
-    strip_truncations.
-    cbn; apply ap.
-    apply concat_1p.
-  (** Right identity *)
-  - intro x.
-    strip_truncations.
-    cbn; apply ap.
-    apply concat_p1.
-  (** Left inverse *)
-  - intro x.
-    strip_truncations.
-    apply (ap tr).
-    apply concat_Vp.
-  (** Right inverse *)
-  - intro x.
-    strip_truncations.
-    apply (ap tr).
-    apply concat_pV.
+  - split.
+    + repeat split.
+      (** [IsHSet] *)
+      * exact _.
+      (** Associativity *)
+      * intros x y z.
+        strip_truncations.
+        cbn; apply ap.
+        apply concat_p_pp.
+      (** Left identity *)
+      * intro x.
+        strip_truncations.
+        cbn; apply ap.
+        apply concat_1p.
+      (** Right identity *)
+      * intro x.
+        strip_truncations.
+        cbn; apply ap.
+        apply concat_p1.
+    (** Left inverse *)
+    + intro x.
+      strip_truncations.
+      apply (ap tr).
+      apply concat_Vp.
+    (** Right inverse *)
+    + intro x.
+      strip_truncations.
+      apply (ap tr).
+      apply concat_pV.
 Defined.
 
 (** Definition of the nth homotopy group *)
@@ -184,6 +190,13 @@ Proof.
   destruct n; unfold pequiv_ppi_ptr_iterated_loops.
   1: exact (pmap_postcompose_idmap _ @* (pmap_precompose_idmap _)^*).
   refine (pmap_postcompose_idmap _ @* _ @* (pmap_precompose_idmap _)^*).
+  srapply phomotopy_homotopy_hset; reflexivity.
+Defined.
+
+(** For a successor, the equivalences above are the identity, so the previous result simplifies to a pointed homotopy between the two induced maps. *)
+Definition fmap_ppi_ptr_iterated_loops_succ (n : nat) {X Y : pType} (f : X ->* Y)
+  : fmap (pPi n.+1) f ==* fmap (pTr 0) (fmap (iterated_loops n.+1) f).
+Proof.
   srapply phomotopy_homotopy_hset; reflexivity.
 Defined.
 
@@ -334,6 +347,26 @@ Proof.
   by apply issurj_iterated_loops_connmap.
 Defined.
 
+(** The [n.+2]-nd homotopy group of an [n.+1]-truncated type vanishes. *)
+Definition contr_pi_succ_istrunc `{Univalence} (n : nat) (X : pType)
+  `{IsTrunc n.+1 X}
+  : Contr (Pi n.+2 X).
+Proof.
+  rapply contr_O_contr.
+  rapply (equiv_istrunc_contr_iterated_loops n.+2).
+Defined.
+
+(** An [n.+1]-truncated pointed [0]-connected type whose [n.+1]-st homotopy group vanishes is [n]-truncated. *)
+Definition istrunc_contr_pi `{Univalence} (n : nat) (X : pType)
+  `{IsConnected 0 X} `{IsTrunc n.+1 X} (c : Contr (Pi n.+1 X))
+  : IsTrunc n X.
+Proof.
+  apply (equiv_istrunc_contr_iterated_loops n.+1 X)^-1.
+  rapply (conn_point_elim (-1)%trunc).
+  pose proof (istrunc_iterated_loops n.+1 X).
+  exact (contr_equiv' (Pi n.+1 X) (equiv_tr 0 _)^-1%equiv).
+Defined.
+
 (** Pointed sections induce embeddings on homotopy groups. *)
 Proposition isembedding_pi_psect {n : nat} {X Y : pType}
   (s : X ->* Y) (r : Y ->* X) (k : r o* s ==* pmap_idmap)
@@ -347,3 +380,86 @@ Proof.
   exact (fmap_id (pPi n) X x).
 Defined.
 
+(** ** The long exact sequence of homotopy groups *)
+
+(** A fiber sequence [F -> X -> Y] gives rise to a long exact sequence of homotopy groups.  [Pi_les_pset] already provides one, but its maps are expressed using the composite [pTr 0 o iterated_loops n] instead of [pPi n].  We build the equivalent sequence whose maps are [fmap (pPi n)] and the connecting maps, giving each ingredient a name so that the terms of the sequence are transparent.  When [n] is destructed, the objects of the two sequences are definitionally equal, and the only difference between the morphisms is in their pointedness proofs.  The new sequence also definitionally lands in groups for successor indices. *)
+
+Section PiLES.
+  Local Open Scope succ_scope.
+
+  Context `{Univalence} {F X Y : pType} (i : F ->* X) (f : X ->* Y)
+    `{IsExact purely F X Y i f}.
+
+  (** The types appearing in the sequence. *)
+  Definition pi_carrier (n : N3) : pType :=
+    match n with
+    | (n, inl (inl (inl x))) => Empty_ind _ x
+    | (n, inl (inl (inr tt))) => pPi n Y
+    | (n, inl (inr tt)) => pPi n X
+    | (n, inr tt) => pPi n F
+    end.
+
+  (** They are pointed equivalent to the types appearing in [Pi_les_pset], by the identity map in each case. *)
+  Definition pequiv_pi_carrier (n : N3)
+    : pi_carrier n <~>* pTr 0 (loops_carrier F X Y n).
+  Proof.
+    destruct n as [n x]; FinIndOn x; exact (pequiv_ppi_ptr_iterated_loops _ _).
+  Defined.
+
+  (** The connecting map [Pi n.+1 Y -> Pi n F] of the fiber sequence. *)
+  Definition pi_connecting_map (n : nat)
+    : pPi n.+1 Y ->* pPi n F
+    := (pequiv_ppi_ptr_iterated_loops n F)^-1*
+         o* fmap (pTr 0) (connecting_map (fmap (iterated_loops n) i)
+                                         (fmap (iterated_loops n) f)).
+
+  (** The maps appearing in the sequence. *)
+  Definition pi_les_fn (n : N3)
+    : pi_carrier (ss_succ n) ->* pi_carrier n.
+  Proof.
+    destruct n as [n x]; FinIndOn x.
+    - exact (fmap (pPi n) f).
+    - exact (fmap (pPi n) i).
+    - exact (pi_connecting_map n).
+  Defined.
+
+  (** They agree with the maps of [Pi_les_pset] under the equivalences above.  For the first two this is [fmap_ppi_ptr_iterated_loops]; for the connecting map it is the cancellation of an equivalence with its inverse. *)
+  Definition pi_les_square (n : N3)
+    : pequiv_pi_carrier n o* pi_les_fn n
+      ==* les_fn (Pi_les_pset i f) n o* pequiv_pi_carrier (ss_succ n).
+  Proof.
+    destruct n as [n x]; FinIndOn x.
+    - exact (fmap_ppi_ptr_iterated_loops n f).
+    - exact (fmap_ppi_ptr_iterated_loops n i).
+    - tapply phomotopy_homotopy_hset.
+      intro x; cbn.
+      apply eisretr.
+  Defined.
+
+  (** The long exact sequence of homotopy groups of a fiber sequence. *)
+  Definition Pi_les : LongExactSequence (Tr (-1)) N3
+    := les_pequiv (Pi_les_pset i f) pi_carrier
+         pequiv_pi_carrier pi_les_fn pi_les_square.
+
+  (** Each level of [Pi_les] contributes three exactness statements, which we record separately to save the reader from the indexing of [N3].  They are named after the space whose homotopy group sits in the middle of the sequence, and are listed in the order in which they occur. *)
+
+  (** [Pi_les] is exact at [Pi n F], the homotopy group of the fiber.  The map into it is the connecting map. *)
+  Definition isexact_pi_fiber (n : nat)
+    : IsExact (Tr (-1)) (pi_connecting_map n) (fmap (pPi n) i)
+    := les_isexact _ _ Pi_les (n, inl (inr tt)).
+
+  (** [Pi_les] is exact at [Pi n X], the homotopy group of the total space. *)
+  Definition isexact_pi_total (n : nat)
+    : IsExact (Tr (-1)) (fmap (pPi n) i) (fmap (pPi n) f)
+    := les_isexact _ _ Pi_les (n, inl (inl (inr tt))).
+
+  (** [Pi_les] is exact at [Pi n.+1 Y], the homotopy group of the base.  The map out of it is the connecting map. *)
+  Definition isexact_pi_base (n : nat)
+    : IsExact (Tr (-1)) (fmap (pPi n.+1) f) (pi_connecting_map n)
+    := les_isexact _ _ Pi_les (n, inr tt).
+
+End PiLES.
+
+(** [F], [X] and [Y] cannot be inferred from the index, so we make them explicit, as they are in [loops_carrier]. *)
+Arguments pi_carrier F X Y n : clear implicits.
+Arguments pequiv_pi_carrier F X Y n : clear implicits.

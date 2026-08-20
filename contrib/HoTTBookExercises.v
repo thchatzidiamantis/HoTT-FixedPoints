@@ -613,8 +613,8 @@ Definition coprod_ump2 {A B X} : (A -> X) * (B -> X) -> (A + B -> X) :=
   prod_ind (fun _ => A + B -> X) (fun f g => sum_ind (fun _ => X) f g).
 
 Definition Book_2_9 {A B X} `{Funext} : (A -> X) * (B -> X) <~> (A + B -> X).
-  apply (equiv_adjointify coprod_ump2 coprod_ump1).
 Proof.
+  apply (equiv_adjointify coprod_ump2 coprod_ump1).
   - intros f.
     apply path_forall.
     intros [a | b]; reflexivity.
@@ -1452,12 +1452,10 @@ Section Book_4_5.
 
     Local Instance Book_4_5_g : IsEquiv g.
     Proof.
-      apply isequiv_biinv.
-      split.
-      - exists ((h o g)^-1 o h).
-        exact (eissect (h o g)).
-      - exists (f o (g o f)^-1).
-        exact (eisretr (g o f)).
+      apply isequiv_isbiinv.
+      apply (Build_IsBiInv _ _ _ (f o (g o f)^-1) ((h o g)^-1 o h)).
+      - exact (eisretr (g o f)).
+      - exact (eissect (h o g)).
     Defined.
 
     Local Instance Book_4_5_f : IsEquiv f.

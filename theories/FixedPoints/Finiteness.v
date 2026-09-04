@@ -6,6 +6,7 @@ Require Import Spaces.Finite.
 Require Import Universes.HProp HSet.
 Require Import Homotopy.ClassifyingSpace HomotopyGroup WhiteheadsPrinciple.
 Require Import Misc.BoundedSearch CompactTypes.
+Require Import FixedPoints.Decidable.
 Require Import Algebra.Groups.Group Subgroup Algebra.AbGroups.Centralizer.
 Require Import Colimits.Quotient.
 Require Import Pointed WildCat.Core.
@@ -259,23 +260,6 @@ Proof.
   intro g; apply cG.
   intro h.
   by apply dpH.
-Defined.
-
-Definition IsHExistsCompact (A : Type)
-  := forall P : A -> Type, (forall a : A, Decidable (P a)) -> Decidable (hexists P).
-
-Definition ishprop_ishexistscompact `{Funext} (A : Type)
-  : IsHProp (IsHExistsCompact A) := _.
-
-Definition ishexistscompact_issigmacompact `{Funext} {A}
-  (c : merely (IsSigmaCompact A))
-  : IsHExistsCompact A.
-Proof.
-  strip_truncations.
-  intros P dP.
-  destruct (c P dP) as [l|r].
-  - left; exact (tr l).
-  - right; intros u; by strip_truncations.
 Defined.
 
 (* Weaker assumption: [G $-> H] has decidable paths? *)

@@ -22,8 +22,9 @@ Local Open Scope type_scope.
 - Connect to collapsible types (see [splitsupp_collapsible, merely_rec_hset]).
 [done, yes it's equivalent to WLEM] Is "all types are Π-compact" strictly weaker than LEM?
 [done] Define "stable-compact" types.
-- Are stable-compact types closed under Σ/Π/coproducts?.
+- Are stable-compact types closed under Σ/Π/coproducts/retracts/images?.
 - Split-support-compact types?
+[done] (¬Σ)-compact is equivalent to Π-compact. So is (¬Π)-compact.
 - Get rid of funext wherever possible.
  *)
 
@@ -106,7 +107,7 @@ Defined.
 
 (** ** More on Π-compactness *)
 
-(** This is already in TypeTopology, except maybe the last lemma(?). *)
+(** Everything up to and including [decidable_not_ispicompactprops] is in TypeTopology. *)
 
 Definition IsPiCompactProps (A : Type)
   := forall P : A -> HProp,
@@ -146,14 +147,19 @@ Definition decidable_not_ispicompactprops {A}
   : Decidable (~A)
   := h (const False_hp) _.
 
-Definition stable_forall {A} (P : A -> Type) (d : forall a, Stable (P a))
-  : Stable (forall a, P a).
+(* The converse to this is called "double-negation shift" and is equivalent to ¬¬LEM. *)
+Definition forall_not_not_not_not_forall {A} (P : A -> Type)
+  (u : ~~(forall a, P a))
+  : forall a, ~~(P a).
 Proof.
-  intros r a.
-  rapply stable. intro n.
-  apply r; intro f.
+  intros a n.
+  apply u; intro f.
   exact (n (f a)).
 Defined.
+
+Definition stable_forall {A} (P : A -> Type) (s : forall a, Stable (P a))
+  : Stable (forall a, P a)
+  := (functor_forall idmap s o forall_not_not_not_not_forall P).
 
 Definition ispicompactprops_alltype_wlem (wlem : forall X, Decidable (~X))
   (A : Type)
@@ -165,16 +171,72 @@ Proof.
   left; exact (stable_forall _ _ r).
 Defined.
 
+(* Adding a negation to the Σ-type gives an equivalent definition to Π-compact. *)
+Definition IsNCompact (A : Type)
+  := forall P : A -> HProp,
+      (forall a, Decidable (P a)) -> Decidable (~(sig P)).
+
+(* I'm guessing this is already in this library. *)
+Definition pi_not_iff_not_sigma {A} (P : A -> Type)
+  (dP : forall a, Decidable (P a))
+  : (forall a, ~(P a)) <-> ~(sig P).
+Proof.
+  constructor.
+  { intros f [x u].
+    exact (f x u). }
+  { intros f a u.
+    exact (f (a; u)). }
+Defined.
+
+Definition ispicompactprops_iff_isnncompact `{Funext} (A : Type)
+  : (IsNCompact A) <-> (IsPiCompactProps A).
+Proof.
+  constructor.
+  1,2: intros c P dP.
+  1: destruct (c (Negation_hp o P) _) as [l|r].
+  - left; refine (fun a => (stable_decidable (P a)) _).
+    intro n; exact (l (a; n)).
+  - right; intro f.
+    apply r; intros [a u].
+    exact (u (f a)).
+  - exact (decidable_iff (pi_not_iff_not_sigma _ _ ) (c _ _)).
+Defined.
+
 (** So: LEM <-> all types ∃-compact -> all types Π-compact <-> WLEM. *)
 
 (** ** "Stable-compact" types *)
 
+(* Weaker than Σ-compact. *)
 Definition IsStableCompact (A : Type)
-  := forall P : A -> HProp,
+  := forall P : A -> Type,
       (forall a, Decidable (P a)) -> Stable (sig P).
 
-Definition IshStableCompact (A : Type)
-  := forall P : A -> HProp,
+(* Weaker than ∃-compact. Equivalent to LEM if you assume it for all types. *)
+Definition IsHStableCompact (A : Type)
+  := forall P : A -> Type,
       (forall a, Decidable (P a)) -> Stable (hexists P).
 
 (** Note that we if we try to weaken this even more by requiring the Π-type instead of the Σ-type to be stable, it is a case of [stable_forall] and is true for all types. *)
+
+(** We can also make a stronger definition by asking for the family to be fibrewise stable instead of decidable. I do not see how we can then prove implications between this and other forms of compactness. *)
+
+(* tcc: I am not satisfied with this since the family needs to be fibrewise Σ-compact, but at least it takes care of decidable subtypes. *)
+Definition isstablecompact_sigma {A} {C : A -> Type}
+  (cA : IsStableCompact A) (cC : forall a, IsSigmaCompact (C a))
+  : IsStableCompact (sig C).
+Proof.
+  intros P dP.
+  apply (stable_equiv' (equiv_sigma_assoc C P)).
+  rapply cA; intro a.
+  rapply cC.
+Defined.
+
+Definition ishstablecompact_sigma {A} {C : A -> Type}
+  (cA : IsHStableCompact A) (cC : forall a, IsSigmaCompact (C a))
+  : IsHStableCompact (sig C).
+Proof.
+  intros P dP.
+  apply (stable_equiv' (Trunc_functor_equiv (-1) (equiv_sigma_assoc C P))).
+  rapply cA; intro a.
+  rapply cC.
+Defined.

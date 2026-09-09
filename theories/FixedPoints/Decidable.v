@@ -44,12 +44,11 @@ Definition decidable_merely_merely_decidable `{Funext} (A : Type)
   (md : merely (Decidable A))
   : Decidable (merely A).
 Proof.
-  strip_truncations; destruct md as [a|f].
-  1: exact (inl (tr a)).
-  exact (inr (Trunc_rec f)).
+  strip_truncations.
+  rapply decidable_trunc_decidable.
 Defined.
 
-(* I dont't think the converse is true. *)
+(** I don't think the converse is true. *)
 Definition stable_merely_merely_stable `{Funext} (A : Type)
   (ms : merely (Stable A))
   : Stable (merely A).
@@ -61,11 +60,11 @@ Proof.
 Defined.
 
 Definition not_not_merely {A : Type} (m : merely A) : ~~A
-  := fun f => (Trunc_rec (fun a => f a) m).
+  := fun f => Trunc_rec (fun a => f a) m.
 
 Definition splitsupp_stable {A : Type} (s : Stable A)
   : merely A -> A
-  := s o (not_not_merely).
+  := s o not_not_merely.
 (* Corollary: assuming LEM and Funext, all types are merely stable (by [stable_decidable] and [merely_decidable_decidable_merely]) so all types have merely split support. *)
 
 (** AC_{oo,-1} implies that every type is merely Σ-compact. AC_{0,-1} should imply that every set is merely Σ-compact. *)

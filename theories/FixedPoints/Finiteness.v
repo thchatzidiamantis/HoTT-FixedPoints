@@ -295,7 +295,7 @@ Proof.
     apply ispicompact_issigmacompact.
     apply issigmacompact_strictlyfinite.
   - strip_truncations.
-    apply ishexistscompact_issigmacompact, tr, issigmacompact_strictlyfinite.
+    apply ishexistscompact_merely_issigmacompact, tr, issigmacompact_strictlyfinite.
   - napply issigmacompact_strictlyfinite.
     apply (strictlyfinite_equiv' _ (issig_GroupHomomorphism _ _)).
     rapply strictlyfinite_detachable_subset.

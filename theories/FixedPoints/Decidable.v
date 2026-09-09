@@ -49,6 +49,7 @@ Proof.
 Defined.
 
 (** I don't think the converse is true. *)
+(** Many results in this file, like this one, the previous one, and more, have a "merely" in the hypotheses which is discharged trivially since the goal is an hprop (using Funext).  I think it's probably better to state such results without the merely in the hypothesis, as then you don't need Funext.  Anyone who has Funext in their context can probably just use strip_truncation to achieve the composite themselves.  (I can imagine some exceptions, e.g. if the merely is important for conceptual reasons.)  Alternatively, both versions should be given, so that Funext can be avoided when possible. *)
 Definition stable_merely_merely_stable `{Funext} (A : Type)
   (ms : merely (Stable A))
   : Stable (merely A).
@@ -56,11 +57,13 @@ Proof.
   strip_truncations.
   intro x.
   apply tr, ms.
-  exact (fun f => x (fun ma => Trunc_rec f ma)).
+  exact (x o Trunc_rec).
 Defined.
+(** The last line of the above proof is the fact that [~~merely A -> ~~ A], which is a bit stronger than what the next result says.  Is it worth recording? (Actually, using that ~~ is a modality (see Notnot.v), they are equivalent.) *)
+(** Even more, if O is any modality such that the empty type is modal (e.g. n-truncation for any n >= -1), then [~~(O A) -> ~~A], so we get [merely (Stable A) -> Stable (O A)]. *)
 
 Definition not_not_merely {A : Type} (m : merely A) : ~~A
-  := fun f => Trunc_rec (fun a => f a) m.
+  := fun f => Trunc_rec f m.
 
 Definition splitsupp_stable {A : Type} (s : Stable A)
   : merely A -> A
@@ -93,7 +96,8 @@ Definition IsHExistsCompact (A : Type)
 Definition ishprop_ishexistscompact `{Funext} (A : Type)
   : IsHProp (IsHExistsCompact A) := _.
 
-Definition ishexistscompact_issigmacompact `{Funext} {A}
+(** I inserted "merely" in the name, but this is a case where I'd argue for removing the [merely] in the hypotheses. *)
+Definition ishexistscompact_merely_issigmacompact `{Funext} {A}
   (c : merely (IsSigmaCompact A))
   : IsHExistsCompact A.
 Proof.
@@ -118,7 +122,7 @@ Definition ishprop_ispicompactprops `{Funext} (A : Type)
 Definition ispicompactprops_ispicompact {A} (h : IsPiCompact A)
   : IsPiCompactProps A := h.
 
-Definition ispicompcat_ispicompactprops {A} (h : IsPiCompactProps A)
+Definition ispicompact_ispicompactprops {A} (h : IsPiCompactProps A)
   : IsPiCompact A.
 Proof.
   intros P dP.
@@ -158,7 +162,7 @@ Defined.
 
 Definition stable_forall {A} (P : A -> Type) (s : forall a, Stable (P a))
   : Stable (forall a, P a)
-  := (functor_forall idmap s o forall_not_not_not_not_forall P).
+  := functor_forall_id s o forall_not_not_not_not_forall P.
 
 Definition ispicompactprops_alltype_wlem (wlem : forall X, Decidable (~X))
   (A : Type)
@@ -176,6 +180,12 @@ Definition IsNCompact (A : Type)
       (forall a, Decidable (P a)) -> Decidable (~(sig P)).
 
 (* I'm guessing this is already in this library. *)
+(** Yes, as an equivalence: *)
+Definition pi_not_equiv_not_sigma {A} (P : A -> Type)
+  (dP : forall a, Decidable (P a))
+  : (forall a, ~(P a)) <~> ~(sig P)
+  := equiv_sig_ind _.
+
 Definition pi_not_iff_not_sigma {A} (P : A -> Type)
   (dP : forall a, Decidable (P a))
   : (forall a, ~(P a)) <-> ~(sig P).
@@ -188,12 +198,12 @@ Proof.
 Defined.
 
 Definition ispicompactprops_iff_isnncompact `{Funext} (A : Type)
-  : (IsNCompact A) <-> (IsPiCompactProps A).
+  : IsNCompact A <-> IsPiCompactProps A.
 Proof.
   constructor.
   1,2: intros c P dP.
   1: destruct (c (Negation_hp o P) _) as [l|r].
-  - left; refine (fun a => (stable_decidable (P a)) _).
+  - left; refine (fun a => stable_decidable (P a) _).
     intro n; exact (l (a; n)).
   - right; intro f.
     apply r; intros [a u].
